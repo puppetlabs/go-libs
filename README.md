@@ -3,12 +3,18 @@
 # go-libs 
 The go-libs repo is a repo intended for the sharing of common code for use within Puppet (at present). The idea behind this is that it can be used across teams to solve common problems with the hope being that getting an uptake on this will improve efficiency and improve standards across the board.  
     
+[![Go Report Card](https://goreportcard.com/badge/github.com/puppetlabs/go-libs)](https://goreportcard.com/report/github.com/puppetlabs/go-libs)
+    
 ## Current libraries  
-- HTTP Service client library.  
-- HTTP Service generation  
-- TLS Certificate generation library.
-- TLS certificate generation.  
-- Viper config loading.  
+
+| Library        | Description  |
+| ------------- |-------------|
+| HTTP Service client library.   |          |
+| HTTP Service generation       |          |
+| TLS Certificate generation library. |    |
+| TLS certificate generation. |    |
+| Viper config loading. |    |
+| Concurrency |  [Concurrecny provides helpers for creating mulit-threaded applications](docs/Concurrency.md)  |
     
 ## Make targets
 | Target |Description  |
