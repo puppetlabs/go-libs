@@ -1,0 +1,26 @@
+FROM golang:1.14.6 as builder
+
+ENV GO111MODULE=on
+# Copy over go files and use make dep to pull in dependences
+WORKDIR /go/src/app
+COPY go.mod .
+COPY Makefile .
+RUN make dep
+
+# Copy over the rest of the source files and run
+# The dependences are seperated to make use of dockers caching on image rebuilds
+COPY . .
+RUN make
+
+#Pull in a scratch image and copy the binary from builder for a lightweight production container
+FROM scratch as production
+ARG COMMIT
+
+COPY --from=builder /go/src/app/{{.Name}} /{{.Name}}
+
+# Run the binary when containers started
+ENTRYPOINT [ "/{{.Name}}" ]
+
+EXPOSE 8888
+ENV COMMIT_SHA=$COMMIT
+LABEL commit=${COMMIT_SHA}

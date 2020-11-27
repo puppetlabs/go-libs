@@ -1,0 +1,58 @@
+package config
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/puppetlabs/go-libs/pkg/service"
+)
+
+type headers struct {
+	Name  string
+	Value string
+}
+
+func checkResponseCode(method string, url string, cfg service.Config, code int, reqHeaders ...headers) (*httptest.ResponseRecorder, error) {
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create  client request due to error %s", err)
+	}
+
+	for _, header := range reqHeaders {
+		req.Header.Set(header.Name, header.Value)
+	}
+
+	svc, err := service.NewService(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create service config %s", err)
+	}
+	svc.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != code {
+		return nil, fmt.Errorf("Unexpected response code %d. Expected %d", rr.Code, code)
+	}
+
+	return rr, nil
+}
+
+func TestHelloWorldHandler(t *testing.T) {
+	cfg, err := GetConfig()
+	if err != nil {
+		t.Error(err)
+	}
+	rr, err := checkResponseCode(http.MethodGet, "/test", *cfg, http.StatusOK)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Check the response body is what we expect.
+	expected := "Hello world"
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got <%v> want <%v>",
+			rr.Body.String(), expected)
+	}
+
+}

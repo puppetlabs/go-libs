@@ -1,0 +1,78 @@
+package config
+
+import (
+    handlers2 "{{.Name}}/pkg/handlers"
+	"fmt"
+	"net/http"
+
+
+	"github.com/puppetlabs/go-libs/pkg/config"
+	"github.com/puppetlabs/go-libs/pkg/service"
+)
+
+//Config stores the local service config.
+type Config struct {
+	ListenAddress         string `env:"LISTEN_ADDRESS" default:"{{.ListenAddress}}"`
+	LogLevel              string `env:"LOG_LEVEL" default:"INFO"`
+	TLSCertFile           string `env:"TLS_CERT_FILE" default:"{{.CertFile}}"`
+	TLSKeyFile            string `env:"TLS_KEY_FILE" default:"{{.KeyFile}}"`
+	CorsEnabled           bool `env:"CORS_ENABLED" default:"{{.CorsEnabled}}"`
+	ReadinessCheckEnabled bool `env:"READINESS_CHECK_ENABLED" default:"{{.ReadinessCheckEnabled}}"`
+	MetricsEnabled        bool `env:"METRICS_ENABLED" default:"{{.MetricsEnabled}}"`
+	RateLimit             int  `env:"RATE_LIMIT" default:"{{.RateLimit}}"`
+	RateInterval          int  `env:"RATE_INTERVAL" default:"{{.RateInterval}}"`
+}
+
+//getViperConfig will use Viper to populate the Config struct
+func getViperConfig() (*Config, error) {
+	cfgInt, err := config.LoadViperConfig(Config{})
+	if err != nil {
+		return nil, err
+	}
+	cfg, ok := cfgInt.(Config)
+	if !ok {
+		return nil, fmt.Errorf("viper returned wrong type for config")
+	}
+	return &cfg, nil
+}
+
+//GetConfig will return the service config object thus allowing the servie to get created.
+func GetConfig() (*service.Config, error) {
+
+	cfg, err := getViperConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	handlers := []service.Handler{
+	                    {Method: http.MethodGet, Path: "test", Handler: handlers2.HelloWorld()},
+	                    }
+	serviceCfg := &service.Config{
+		Handlers: handlers,
+		LogLevel: cfg.LogLevel,
+		ListenAddress: cfg.ListenAddress,
+		ReadinessCheck: cfg.ReadinessCheckEnabled,
+        Cors:           &service.CorsConfig{Enabled: cfg.CorsEnabled},
+        Metrics:        cfg.MetricsEnabled,
+	}
+
+	var tlsConfig *service.ServerCertificateConfig
+	if len(cfg.TLSKeyFile) > 0 && len(cfg.TLSCertFile) > 0 {
+		tlsConfig = &service.ServerCertificateConfig{
+			CertificateFile: cfg.TLSCertFile,
+			KeyFile:         cfg.TLSKeyFile,
+		}
+		serviceCfg.CertConfig = tlsConfig
+	}
+
+	if cfg.RateInterval > 0 && cfg.RateLimit > 0 {
+    		rateLimitCfg := &service.RateLimitConfig{
+    			Limit: cfg.RateLimit,
+    			Within:    cfg.RateInterval,
+    		}
+    		serviceCfg.RateLimit = rateLimitCfg
+    }
+
+
+	return serviceCfg, nil
+}
