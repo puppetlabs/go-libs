@@ -100,7 +100,13 @@ func main() {
 	checkError(err)
 
 	rateLimitInt, err := strconv.Atoi(rateLimit)
+	if err != nil {
+		rateLimitInt = 0
+	}
 	rateIntervalInt, err := strconv.Atoi(rateInterval)
+	if err != nil {
+		rateIntervalInt = 0
+	}
 
 	var tlsCertFile string
 	var tlsKeyFile string
