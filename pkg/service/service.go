@@ -96,6 +96,50 @@ func rateLimitHandler(limit int, within int) gin.HandlerFunc {
 	})
 }
 
+func setupCors(corsCfg *CorsConfig, group *gin.RouterGroup) {
+	if corsCfg != nil {
+		if corsCfg.Enabled {
+			if corsCfg.OverrideCfg != nil {
+				group.Use(cors.New(*corsCfg.OverrideCfg))
+			} else {
+				group.Use(cors.Default())
+			}
+		}
+	}
+}
+
+func setupMiddleware(mwHandlers []MiddlewareHandler, group *gin.RouterGroup, rlGroup *gin.RouterGroup) {
+	//Add middleware first then the handlers
+	for _, handler := range mwHandlers {
+		var handlerGroup *gin.RouterGroup
+		if rlGroup != nil && handler.OverrideRateLimit {
+			handlerGroup = rlGroup
+		} else {
+			handlerGroup = group
+		}
+		handlerGroup.Use(handler.Handler)
+	}
+}
+
+func setupEndpoints(handlers []Handler, group *gin.RouterGroup, rlGroup *gin.RouterGroup) {
+	for _, handler := range handlers {
+		var handlerGroup *gin.RouterGroup
+		if rlGroup != nil && !handler.OverrideRateLimit {
+			handlerGroup = rlGroup
+		} else {
+			handlerGroup = group
+		}
+		switch method := handler.Method; method {
+		case http.MethodGet, http.MethodPost:
+			handlerGroup.Handle(method, handler.Path, handler.Handler)
+		case AnyMethod:
+			handlerGroup.Any(handler.Path, handler.Handler)
+		default:
+			logrus.Warnf("HTTP method %s unsupported.", method)
+		}
+	}
+}
+
 //NewService will setup a new service based on the config and return this service.
 func NewService(cfg *Config) (*Service, error) {
 	if len(cfg.Handlers) == 0 {
@@ -112,15 +156,7 @@ func NewService(cfg *Config) (*Service, error) {
 	router.Use(ginlogrus.Logger(logger))
 
 	//Set CORS to the default if it's enabled and no override passed in.
-	if cfg.Cors != nil {
-		if cfg.Cors.Enabled {
-			if cfg.Cors.OverrideCfg != nil {
-				router.Use(cors.New(*cfg.Cors.OverrideCfg))
-			} else {
-				router.Use(cors.Default())
-			}
-		}
-	}
+	setupCors(cfg.Cors, &router.RouterGroup)
 
 	if cfg.ReadinessCheck {
 		router.GET(ReadinessEndpoint, readinessHandler())
@@ -140,33 +176,8 @@ func NewService(cfg *Config) (*Service, error) {
 		rlGroup.Use(rateLimitHandler(cfg.RateLimit.Limit, cfg.RateLimit.Within))
 	}
 
-	//Add middleware first then the handlers
-	for _, handler := range cfg.MiddlewareHandlers {
-		var group *gin.RouterGroup
-		if rlGroup != nil && handler.OverrideRateLimit {
-			group = rlGroup
-		} else {
-			group = &router.RouterGroup
-		}
-		group.Use(handler.Handler)
-	}
-
-	for _, handler := range cfg.Handlers {
-		var group *gin.RouterGroup
-		if rlGroup != nil && !handler.OverrideRateLimit {
-			group = rlGroup
-		} else {
-			group = &router.RouterGroup
-		}
-		switch method := handler.Method; method {
-		case http.MethodGet, http.MethodPost:
-			group.Handle(method, handler.Path, handler.Handler)
-		case AnyMethod:
-			group.Any(handler.Path, handler.Handler)
-		default:
-			logrus.Warnf("HTTP method %s unsupported.", method)
-		}
-	}
+	setupMiddleware(cfg.MiddlewareHandlers, &router.RouterGroup, rlGroup)
+	setupEndpoints(cfg.Handlers, &router.RouterGroup, rlGroup)
 
 	server := &http.Server{
 		Addr:    cfg.ListenAddress,

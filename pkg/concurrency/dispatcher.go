@@ -1,16 +1,16 @@
 /*
-Concurrency contains code that helps build multi-threaded applications
+Package concurrency contains code that helps build multi-threaded applications
 */
 package concurrency
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
+	"github.com/sirupsen/logrus"
+)
 
 // Task is the interface a struct must implement, so that it can
 // be submitted to the dispatcher.
@@ -40,13 +40,12 @@ type Dispatcher interface {
 // queueSize is the size of the channel used to store tasks.
 func NewDispatcher(id string, workers, queueSize int) Dispatcher {
 	return &dispatcher{
-		ID: id,
-		workers:  workers,
-		tasks: make(chan Task , queueSize),
-		wg: sync.WaitGroup{},
+		ID:      id,
+		workers: workers,
+		tasks:   make(chan Task, queueSize),
+		wg:      sync.WaitGroup{},
 	}
 }
-
 
 // Start the Dispatcher running.  No work will be processed until Start() is called.
 // This will start a a number of go routines that will consume work from the tasks queue.   Start will
@@ -66,7 +65,6 @@ func (d *dispatcher) Stop() {
 	close(d.tasks)
 	d.wg.Wait() // wait for all workers to return
 }
-
 
 // Submit a task to the work queue.  It will return an error if there is a timeout while
 // waiting for the work to be submitted to the queue.  Note that just because the work is
@@ -91,7 +89,6 @@ func (d *dispatcher) ProcessedJobs() uint64 {
 	return d.ops
 }
 
-
 // worker reads from the task channel and when it receives
 // a Task, calls its Execute function.
 func (d *dispatcher) worker(id int) {
@@ -110,7 +107,7 @@ func (d *dispatcher) worker(id int) {
 // submit a task to the task queue.
 func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	select {
-	case queue <-task:
+	case queue <- task:
 	case <-timeout:
 		return fmt.Errorf("Timed out waiting to submit task")
 	}
@@ -120,11 +117,11 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 // dispatcher.  This keeps state for the dispatcher, including a unique name, the number of works to create
 // and a channel of tasks to be processed.  A dispatcher
 type dispatcher struct {
-	ID string
+	ID      string
 	workers int
-	tasks chan Task
-	wg sync.WaitGroup
-	ops uint64
+	tasks   chan Task
+	wg      sync.WaitGroup
+	ops     uint64
 }
 
 // work is a  private struct that implements the Task interface.  It is used to wrap functions prior to adding them to

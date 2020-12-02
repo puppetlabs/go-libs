@@ -3,13 +3,15 @@ package concurrency_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/puppetlabs/go-libs/pkg/concurrency"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"log"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/puppetlabs/go-libs/pkg/concurrency"
+	"github.com/sirupsen/logrus"
 )
 
 // BenchmarkDispatcher creates a dispatcher, starts it and calls run
@@ -23,7 +25,7 @@ func BenchmarkDispatcher(b *testing.B) {
 	// Create Fake Jobs
 	log.Printf("Running With %d Jobs", b.N)
 	for i := 0; i < b.N; i++ {
-		dispatcher.Submit(&MockWork{id: strconv.Itoa(i), sleepTime: 20*time.Millisecond})
+		dispatcher.Submit(&MockWork{id: strconv.Itoa(i), sleepTime: 20 * time.Millisecond})
 	}
 	log.Printf("Waiting to Stop")
 	dispatcher.Stop()
@@ -34,13 +36,13 @@ func BenchmarkDispatcher(b *testing.B) {
 // MockWork implements the Task interface, and can be submitted to the dispatcher to be processed by
 // worker threads.
 type MockWork struct {
-	id string
+	id        string
 	sleepTime time.Duration
 }
 
 // Execute performs the actual work
 func (w MockWork) Execute() error {
-mockMessage := MockMessage{Name: w.id}
+	mockMessage := MockMessage{Name: w.id}
 	_, err := json.Marshal(mockMessage)
 	time.Sleep(w.sleepTime)
 	return err
@@ -56,7 +58,7 @@ type MockMessage struct {
 // You can submit jobs via any of the Submit methods.
 // Once your done you should call Stop.  This will block and wait for all the worker go routines to complete.
 func ExampleNewDispatcher() {
-	dispatcher := concurrency.NewDispatcher("foo", 10,  5)
+	dispatcher := concurrency.NewDispatcher("foo", 10, 5)
 	dispatcher.Start()
 
 	dispatcher.SubmitWork(func() error {
@@ -69,17 +71,15 @@ func ExampleNewDispatcher() {
 
 // Create a new dispatcher with the name "foo".
 // Create an instance of MockWork and submit that to the dispatcher.
-func ExampleNewDispatcher2() {
-	dispatcher := concurrency.NewDispatcher("foo", 10,  5)
+func ExampleNewDispatcher_second() {
+	dispatcher := concurrency.NewDispatcher("foo", 10, 5)
 	dispatcher.Start()
 
-	w1 := MockWork{id: "bob", sleepTime: 5*time.Second}
+	w1 := MockWork{id: "bob", sleepTime: 5 * time.Second}
 	dispatcher.Submit(w1)
 
 	dispatcher.Stop() // blocks and waits for all workers to complete
 }
-
-
 
 // Start the dispatcher running.
 // This starts a number of workers (go routines).  Start will return
@@ -102,16 +102,16 @@ func ExampleDispatcher_SubmitWork() {
 	dispatcher := concurrency.NewDispatcher("foo", 10, 5)
 	dispatcher.Start()
 
-	i := 10
+	var i int32 = 10
 
 	dispatcher.SubmitWork(func() error {
 		// Do some work here...
-		i++
+		atomic.AddInt32(&i, 1)
 		return nil
 	})
 	dispatcher.SubmitWork(func() error {
 		// Do some work here...
-		i++
+		atomic.AddInt32(&i, 1)
 		return nil
 	})
 	dispatcher.Stop()
@@ -122,7 +122,7 @@ func ExampleDispatcher_SubmitWork() {
 
 // Submit three jobs to the dispatcher.  After calling stop verify the number of ProcessedJobs.
 func ExampleDispatcher_ProcessedJobs() {
-	dispatcher := concurrency.NewDispatcher("test", 1,  5)
+	dispatcher := concurrency.NewDispatcher("test", 1, 5)
 	dispatcher.Start()
 
 	work := func() error {

@@ -33,6 +33,9 @@ func TestGenerateCertLocalhostWorks(t *testing.T) {
 	}
 
 	keyPair, err := GenerateSignedCert(rootKeyPair, []string{"localhost"}, "localhost")
+	if err != nil {
+		t.Errorf("failed to generate certificate %s", err)
+	}
 
 	block, _ := pem.Decode([]byte(keyPair.Certificate))
 	if block == nil {
@@ -66,6 +69,9 @@ func TestGenerateCertNonLocalhostWorks(t *testing.T) {
 	}
 
 	keyPair, err := GenerateSignedCert(rootKeyPair, []string{"externalhost"}, "externalhost")
+	if err != nil {
+		t.Errorf("failed to generate certificate %s", err)
+	}
 
 	block, _ := pem.Decode([]byte(keyPair.Certificate))
 	if block == nil {
