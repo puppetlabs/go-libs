@@ -1,11 +1,23 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
+
+var yamlExample = []byte(`db:
+  dbName: mydb
+  host: abc
+  port: 5432
+  sslMode: disable
+  user: postgres
+webserver:
+  apiReadTimeout: 120s
+  apiWriteTimeout: 120s`)
 
 //StructNoTags holds one field with no tags against the struct
 type StructNoTags struct {
@@ -50,6 +62,12 @@ type OuterStructInnerError struct {
 //InnerStruct is the nested struct
 type InnerStruct struct {
 	TestNestInner string `env:"TEST_NEST_INNER" default:"inner"`
+	InnerMostStruct
+}
+
+//InnerMostStruct is the nested struct
+type InnerMostStruct struct {
+	TestNestInnerMost string `env:"TEST_NEST_INNER_MOST" default:"innermost"`
 }
 
 //OuterStruct is the struct containing the nested struct
@@ -58,57 +76,31 @@ type OuterStruct struct {
 	InnerStruct
 }
 
-func getNestedErrorConfig() (*OuterStructInnerError, error) {
-	cfgInt, err := LoadViperConfig(OuterStructInnerError{})
-	if err != nil {
-		return nil, err
-	}
-	cfg, ok := cfgInt.(OuterStructInnerError)
-	if !ok {
-		return nil, fmt.Errorf("viper returned wrong type for config")
-	}
-	return &cfg, nil
+//Database contains the postgres config.
+type Database struct {
+	DBName   string `env:"UT_DB_NAME" default:"nottest"`
+	Host     string `env:"UT_DB_HOST" default:"xyz"`
+	Password string `env:"UT_DB_PASSWORD" default:"12345"`
+	Port     uint   `env:"UT_DB_PORT" default:"5"`
+	SSLMode  string `env:"UT_DB_SSL_MODE" default:"disabled"`
+	User     string `env:"UT_DB_USER" default:"abc"`
 }
 
-func getNestedConfig() (*OuterStruct, error) {
-	cfgInt, err := LoadViperConfig(OuterStruct{})
-	if err != nil {
-		return nil, err
-	}
-	cfg, ok := cfgInt.(OuterStruct)
-	if !ok {
-		return nil, fmt.Errorf("viper returned wrong type for config")
-	}
-	return &cfg, nil
+//WebServer contains webserver configuration.
+type WebServer struct {
+	APIReadTimeout  time.Duration `env:"UT_WS_API_READ_TIMEOUT" default:"60s"`
+	APIWriteTimeout time.Duration `env:"UT_WS_API_WRITE_TIMEOUT" default:"60s"`
 }
 
-func getAllTaggedConfig() (*StructAllTagged, error) {
-	cfgInt, err := LoadViperConfig(StructAllTagged{})
-	if err != nil {
-		return nil, err
-	}
-	cfg, ok := cfgInt.(StructAllTagged)
-	if !ok {
-		return nil, fmt.Errorf("viper returned wrong type for config")
-	}
-	return &cfg, nil
-}
-
-func getMissingDefaultsConfig() (*StructMissingDefaultTags, error) {
-	cfgInt, err := LoadViperConfig(StructMissingDefaultTags{})
-	if err != nil {
-		return nil, err
-	}
-	cfg, ok := cfgInt.(StructMissingDefaultTags)
-	if !ok {
-		return nil, fmt.Errorf("viper returned wrong type for config")
-	}
-	return &cfg, nil
+//AppConfig The configuration.
+type AppConfig struct {
+	Database
+	WebServer
 }
 
 func TestNoTagsErrors(t *testing.T) {
 	var noTags StructNoTags
-	_, err := LoadViperConfig(noTags)
+	err := LoadViperConfig(noTags)
 	if err == nil {
 		t.Error("Config struct with no default or env tag should error")
 	}
@@ -116,7 +108,7 @@ func TestNoTagsErrors(t *testing.T) {
 
 func TestMissingEnvTagErrors(t *testing.T) {
 	var noEnvTag StructMissingEnvTag
-	_, err := LoadViperConfig(noEnvTag)
+	err := LoadViperConfig(noEnvTag)
 	if err == nil {
 		t.Error("Config struct with no default or env tag should error")
 	}
@@ -124,36 +116,39 @@ func TestMissingEnvTagErrors(t *testing.T) {
 
 func TestNoDefaultsOk(t *testing.T) {
 	expected := StructMissingDefaultTags{TestString: "", TestInt: 0, TestBool: false}
-	viperCfg, err := getMissingDefaultsConfig()
+	var actual StructMissingDefaultTags
+	err := LoadViperConfig(&actual)
 	if err != nil {
 		t.Errorf("Unexpected error %s", err)
 	}
-	if !reflect.DeepEqual(expected, *viperCfg) {
-		t.Errorf("Viper config %v is not equal to expected config %v", viperCfg, expected)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
 
 func TestEmptyDefaultTagIsOk(t *testing.T) {
 	var emptyDefaultTag StructEmptyDefaultTag
-	_, err := LoadViperConfig(emptyDefaultTag)
+	err := LoadViperConfig(&emptyDefaultTag)
 	if err != nil {
 		t.Errorf("Empty default tag should be ok. Error: %s", err)
 	}
 }
 
 func TestDefaultValues(t *testing.T) {
-	allTaggeddefault := StructAllTagged{TestVal: "xyz", TestVal2: "abc", TestInt: 2}
-	viperCfg, err := getAllTaggedConfig()
+	expected := StructAllTagged{TestVal: "xyz", TestVal2: "abc", TestInt: 2}
+	var actual StructAllTagged
+	err := LoadViperConfig(&actual)
 	if err != nil {
-		t.Errorf("Unexpected error %s", err)
+		t.Errorf("unexpected error %s", err)
 	}
-	if !reflect.DeepEqual(allTaggeddefault, *viperCfg) {
-		t.Errorf("Viper config %v is not equal to expected config %v", viperCfg, allTaggeddefault)
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
 
 func TestEnvironmentValues(t *testing.T) {
-	allTaggedEnvironment := StructAllTagged{TestVal: "env1", TestVal2: "env2", TestInt: 3}
+	expected := StructAllTagged{TestVal: "env1", TestVal2: "env2", TestInt: 3}
 
 	err := os.Setenv("TEST_VAL", "env1")
 	if err != nil {
@@ -168,31 +163,71 @@ func TestEnvironmentValues(t *testing.T) {
 		t.Errorf("unexpected error %s", err)
 	}
 
-	viperCfg, err := getAllTaggedConfig()
+	var actual StructAllTagged
+	err = LoadViperConfig(&actual)
 	if err != nil {
 		t.Errorf("Unexpected error %s", err)
 	}
 
-	if !reflect.DeepEqual(allTaggedEnvironment, *viperCfg) {
-		t.Errorf("Viper config %v is not equal to expected config %v", viperCfg, allTaggedEnvironment)
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
 
 func TestNestedStruct(t *testing.T) {
-	nestedStruct := OuterStruct{TestNestOuter: "outer", InnerStruct: InnerStruct{TestNestInner: "inner"}}
-	viperCfg, err := getNestedConfig()
+	expected := OuterStruct{TestNestOuter: "outer", InnerStruct: InnerStruct{TestNestInner: "inner", InnerMostStruct: InnerMostStruct{TestNestInnerMost: "innermost"}}}
+	var actual OuterStruct
+	err := LoadViperConfig(&actual)
 	if err != nil {
 		t.Errorf("Unexpected error %s", err)
 	}
-	if !reflect.DeepEqual(nestedStruct, *viperCfg) {
-		t.Errorf("Viper config %v is not equal to expected config %v", viperCfg, nestedStruct)
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
 
 func TestNestedStructWithError(t *testing.T) {
-	_, err := getNestedErrorConfig()
+	var actual OuterStructInnerError
+	err := LoadViperConfig(&actual)
 	fmt.Println(err)
 	if err == nil {
 		t.Errorf("Nested struct with no env tag should error.")
+	}
+}
+
+//The password is default
+func TestReadYamlConfigWithSomeDefaults(t *testing.T) {
+	os.Clearenv()
+	expected := AppConfig{Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "12345", User: "postgres"},
+		WebServer{APIReadTimeout: time.Second * time.Duration(120), APIWriteTimeout: time.Second * time.Duration(120)},
+	}
+	reader := bytes.NewReader(yamlExample)
+	var actual AppConfig
+	err := LoadViperConfigFromReader(reader, &actual, "yaml")
+	if err != nil {
+		t.Errorf("Unexpected error occured %s.", err)
+	}
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
+	}
+}
+
+func TestReadYamlConfigWithEnvOverride(t *testing.T) {
+	os.Clearenv()
+	expected := AppConfig{Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "environment", User: "postgres"},
+		WebServer{APIReadTimeout: time.Second * time.Duration(120), APIWriteTimeout: time.Second * time.Duration(120)},
+	}
+	var actual AppConfig
+	err := os.Setenv("UT_DB_PASSWORD", "environment")
+	if err != nil {
+		t.Errorf("Unexpected error occured %s.", err)
+	}
+	reader := bytes.NewReader(yamlExample)
+	err = LoadViperConfigFromReader(reader, &actual, "yaml")
+	if err != nil {
+		t.Errorf("Unexpected error occured %s.", err)
+	}
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
