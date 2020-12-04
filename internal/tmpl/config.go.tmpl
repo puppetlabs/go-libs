@@ -2,7 +2,6 @@ package config
 
 import (
     handlers2 "{{.Name}}/pkg/handlers"
-	"fmt"
 	"net/http"
 
 
@@ -23,26 +22,14 @@ type Config struct {
 	RateInterval          int  `env:"RATE_INTERVAL" default:"{{.RateInterval}}"`
 }
 
-//getViperConfig will use Viper to populate the Config struct
-func getViperConfig() (*Config, error) {
-	cfgInt, err := config.LoadViperConfig(Config{})
-	if err != nil {
-		return nil, err
-	}
-	cfg, ok := cfgInt.(Config)
-	if !ok {
-		return nil, fmt.Errorf("viper returned wrong type for config")
-	}
-	return &cfg, nil
-}
-
 //GetConfig will return the service config object thus allowing the servie to get created.
 func GetConfig() (*service.Config, error) {
 
-	cfg, err := getViperConfig()
-	if err != nil {
-		return nil, err
-	}
+    var cfg Config
+	err := config.LoadViperConfig(&cfg)
+    if err != nil {
+    	return nil, err
+    }
 
 	handlers := []service.Handler{
 	                    {Method: http.MethodGet, Path: "test", Handler: handlers2.HelloWorld()},

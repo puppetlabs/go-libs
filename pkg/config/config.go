@@ -2,19 +2,43 @@ package config
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
+
+	"github.com/imdario/mergo"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/spf13/viper"
 )
 
-func setupViperConfig(cfg interface{}) error {
-	t := reflect.TypeOf(cfg)
+func setupViperConfig(cfg interface{}, v *viper.Viper) error {
+	//Get the type from the pointer or the struct itself - N.B. It will be a struct when called recursively.
+	var t reflect.Type
+	cfgType := reflect.TypeOf(cfg).Kind()
+	if cfgType == reflect.Ptr {
+		t = reflect.TypeOf(cfg).Elem()
+	} else if cfgType == reflect.Struct {
+		t = reflect.TypeOf(cfg)
+	} else {
+		return fmt.Errorf("config type must be either a pointer to a struct or a struct")
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if f.Type.Kind() == reflect.Struct {
-			err := setupViperConfig(reflect.ValueOf(cfg).Field(i).Interface())
+			var val interface{}
+			if cfgType == reflect.Ptr {
+				val = reflect.ValueOf(cfg).Elem().Field(i).Interface()
+			} else {
+				val = reflect.ValueOf(cfg).Field(i).Interface()
+			}
+			err := setupViperConfig(val, v)
 			if err != nil {
 				return err
 			}
@@ -23,36 +47,115 @@ func setupViperConfig(cfg interface{}) error {
 
 		//The env tag is mandatory. It not present or we fail to set it up then error.
 		if envTag, ok := f.Tag.Lookup("env"); ok {
-			if err := viper.BindEnv(f.Name, envTag); err != nil {
+			if err := v.BindEnv(f.Name, envTag); err != nil {
 				return fmt.Errorf("unable to bind %s to environment variable %s", f.Name, envTag)
 			}
 		} else {
 			return fmt.Errorf("empty env tag for field %s", f.Name)
 		}
 
-		if defaultTag, ok := f.Tag.Lookup("default"); ok {
-			viper.SetDefault(f.Name, defaultTag)
+		var fileDefaultSet bool
+		if fileTag, ok := f.Tag.Lookup("file"); ok {
+			//It is not mandatory to have a default set so we will log this and move on.
+			fileBytes, err := ioutil.ReadFile(fileTag) //#nosec The security linter will pick this up. It is build time injection so it is assumed this will be tested first.
+			if err != nil {
+				logrus.Warnf("Unable to read file %s due to error %s.", fileTag, err)
+			}
+			v.SetDefault(f.Name, string(fileBytes))
+			fileDefaultSet = true
+		}
+
+		if !fileDefaultSet {
+			if defaultTag, ok := f.Tag.Lookup("default"); ok {
+				v.SetDefault(f.Name, defaultTag)
+			}
 		}
 	}
 	return nil
 
 }
 
-//LoadViperConfig will return an interface with a populated struct of config with the type being the same as that passed
-// in. See unit tests for usage.
-func LoadViperConfig(cfg interface{}) (interface{}, error) {
-
-	err := setupViperConfig(cfg)
-	if err != nil {
-		return nil, err
+//LoadViperConfig will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
+func LoadViperConfig(cfg interface{}) error {
+	if reflect.TypeOf(cfg).Kind() != reflect.Ptr {
+		return fmt.Errorf("reading viper config requires a pointer argument")
 	}
-	cfgInt := cfg
-	err = viper.Unmarshal(&cfgInt, func(config *mapstructure.DecoderConfig) {
+	v := viper.New()
+	err := setupViperConfig(cfg, v)
+	if err != nil {
+		return err
+	}
+	return v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
 	})
-	if err != nil {
-		return nil, err
-	}
-	return cfgInt, nil
+}
 
+//flattenCfgMap will take a map of any depth and flatten it down so there is only one level. N.B. The key will
+//always remain the same.
+func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error) {
+	flatMap := make(map[string]interface{})
+	for k, v := range cfgMap {
+		if innerMap, ok := v.(map[string]interface{}); ok {
+			flatInnerMap, err := flattenCfgMap(innerMap)
+			if err != nil {
+				return nil, err
+			}
+			err = mergo.Merge(&flatMap, flatInnerMap)
+		} else {
+			flatMap[k] = v
+		}
+	}
+	return flatMap, nil
+}
+
+//LoadViperConfigFromFile will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
+//The config will be read from a file but environment variables override and default values can still be set. The file can
+// be anything that Viper supports. N.B. This only supports anonymous nested structs.
+func LoadViperConfigFromFile(filename string, cfg interface{}) error {
+	reader, err := os.Open(filepath.Clean(filename))
+	if err != nil {
+		return err
+	}
+
+	err = LoadViperConfigFromReader(reader, cfg, filepath.Ext(filename))
+
+	//N.B. Deferring a file close is bad practise so making it key part of function.
+	fileCloseErr := reader.Close()
+	if fileCloseErr != nil {
+		return fileCloseErr
+	}
+	return err
+}
+
+//LoadViperConfigFromReader will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
+// The config will be read from a reader which must be setup prior to the call. N.B. The cfgType can be anything supported by viper
+// i.e. yaml, json, env, ini, toml.
+func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) error {
+	v := viper.New()
+	v.SetConfigType(cfgType)
+	err := v.ReadConfig(in)
+	if err != nil {
+		return err
+	}
+
+	//Reading in config from a source with multiple levels(usually a config file) will produce a multi dimensional map whereas
+	//reading from a struct produces a flattened map. Flattening the map from the reader and merging with the already flattened
+	//struct map aligns this.
+	flatCfgMap, err := flattenCfgMap(v.AllSettings())
+	if err != nil {
+		return err
+	}
+	err = v.MergeConfigMap(flatCfgMap)
+	if err != nil {
+		return err
+	}
+
+	err = setupViperConfig(cfg, v)
+	if err != nil {
+		return err
+	}
+
+	return v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
+		config.Squash = true
+	})
 }
