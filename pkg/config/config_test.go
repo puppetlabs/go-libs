@@ -205,7 +205,7 @@ func TestReadYamlConfigWithSomeDefaults(t *testing.T) {
 	var actual AppConfig
 	err := LoadViperConfigFromReader(reader, &actual, "yaml")
 	if err != nil {
-		t.Errorf("Unexpected error occured %s.", err)
+		t.Errorf("Unexpected error occurred %s.", err)
 	}
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
@@ -220,12 +220,12 @@ func TestReadYamlConfigWithEnvOverride(t *testing.T) {
 	var actual AppConfig
 	err := os.Setenv("UT_DB_PASSWORD", "environment")
 	if err != nil {
-		t.Errorf("Unexpected error occured %s.", err)
+		t.Errorf("Unexpected error occurred %s.", err)
 	}
 	reader := bytes.NewReader(yamlExample)
 	err = LoadViperConfigFromReader(reader, &actual, "yaml")
 	if err != nil {
-		t.Errorf("Unexpected error occured %s.", err)
+		t.Errorf("Unexpected error occurred %s.", err)
 	}
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
