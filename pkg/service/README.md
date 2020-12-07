@@ -29,7 +29,6 @@ type Config struct {
   ListenAddress      string                   //Address in the format [host/ip]:port. Mandatory  
   LogLevel           string                   //INFO,FATAL,ERROR,WARN, DEBUG, TRACE  
   Cors               *CorsConfig              //Optional cors config  
-  Auth               func(c *gin.Context)     //An optional Auth handler.  
   ReadinessCheck     bool                     //Set to true to add a readiness handler at /readiness.  
   Handlers           []Handler                //Array of handlers. N.B. At least one handler is required.  
   CertConfig         *ServerCertificateConfig //Optional TLS configuration  
@@ -38,18 +37,18 @@ type Config struct {
   Metrics            bool                     //Optional. If true a prometheus metrics endpoint will be exposed at /metrics/  
 }  
   
-//Handler will hold all the callback handlers to be registered. N.B. gin will be used.  
-type Handler struct {  
-  Method            string               //HTTP method or service.AnyMethod to support all limits.  
-  Path              string               //The path the endpoint runs on.  
-  OverrideRateLimit bool                 //Optional - set to true if rate limiting is on and this handler will not use it.  
-  Handler           func(c *gin.Context) //The handler to be used.  
-}  
+//Handler will hold all the callback handlers to be registered. N.B. gin will be used.
+type Handler struct {
+	Method  string               //HTTP method or service.AnyMethod to support all limits.
+	Path    string               //The path the endpoint runs on.
+	Group   string               //Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
+	Handler func(c *gin.Context) //The handler to be used.
+}
   
-//MiddlewareHandler will hold all the middleware and whether  
-type MiddlewareHandler struct {  
-  OverrideRateLimit bool                 //Optional - set to true if rate limiting is on and this handler will not use it.  
-  Handler           func(c *gin.Context) //The handler to be used.  
+//MiddlewareHandler will hold all the middleware and whether
+type MiddlewareHandler struct {
+	Groups  []string             //Optional - what group should this middleware run on. Empty means the default route.
+	Handler func(c *gin.Context) //The handler to be used.
 }  
   
 //ServerCertificateConfig holds detail of the certificate config to be used  
@@ -58,17 +57,19 @@ type ServerCertificateConfig struct {
   KeyFile         string //The TLS private key file.  
 }  
   
-//RateLimitConfig specifies the rate limiting config  
-type RateLimitConfig struct {  
-  Limit  int //The number of requests allowed within the timeframe.  
-  Within int //The timeframe(seconds) the requests are allowed in.  
-}  
-  
-//CorsConfig specifies the CORS related config  
-type CorsConfig struct {  
-  Enabled     bool //Whether CORS is enabled or not.  
-  OverrideCfg *cors.Config //Optional. This is only required if you do not want to use the default CORS configuration.  
-}  
+//RateLimitConfig specifies the rate limiting config
+type RateLimitConfig struct {
+	Groups []string //Optional - which group(s) should the rate limiting run on. Empty means the default route.
+	Limit  int      //The number of requests allowed within the timeframe.
+	Within int      //The timeframe(seconds) the requests are allowed in.
+}
+
+//CorsConfig specifies the CORS related config
+type CorsConfig struct {
+	Groups      []string     //Optional - which group(s) should the CORS config run on. Empty means the default route.
+	Enabled     bool         //Whether CORS is enabled or not.
+	OverrideCfg *cors.Config //Optional. This is only required if you do not want to use the default CORS configuration.
+} 
   
 //Service will be the actual structure returned.  
 type Service struct {  
@@ -79,7 +80,10 @@ type Service struct {
 
 #### Notes
 - The cors config and the handlers are based on the gin framework : https://github.com/gin-gonic/gin.  
-- Rate limiting is done by the library github.com/cnjack/throttle.  
+- Rate limiting is done by the library github.com/cnjack/throttle.
+- The group principle is based on Gin routergroups. The idea behind it is that not all middleware needs to run on 
+all requests so the middleware in a group will only run against an endpoint in that group. 
+This is applied to cors, rate limiting and any middleware in general.  
 - See internal/examples/service/main.go for an example of how to use the service package to generate a service.  
     
     

@@ -32,7 +32,6 @@ type Config struct {
 	ListenAddress      string                   //Address in the format [host/ip]:port. Mandatory
 	LogLevel           string                   //INFO,FATAL,ERROR,WARN, DEBUG, TRACE
 	Cors               *CorsConfig              //Optional cors config
-	Auth               func(c *gin.Context)     //An optional Auth handler.
 	ReadinessCheck     bool                     //Set to true to add a readiness handler at /readiness.
 	Handlers           []Handler                //Array of handlers
 	CertConfig         *ServerCertificateConfig //Optional TLS configuration
@@ -43,16 +42,16 @@ type Config struct {
 
 //Handler will hold all the callback handlers to be registered. N.B. gin will be used.
 type Handler struct {
-	Method            string               //HTTP method or service.AnyMethod to support all limits.
-	Path              string               //The path the endpoint runs on.
-	OverrideRateLimit bool                 //Optional - set to true if rate limiting is on and this handler will not use it.
-	Handler           func(c *gin.Context) //The handler to be used.
+	Method  string               //HTTP method or service.AnyMethod to support all limits.
+	Path    string               //The path the endpoint runs on.
+	Group   string               //Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
+	Handler func(c *gin.Context) //The handler to be used.
 }
 
 //MiddlewareHandler will hold all the middleware and whether
 type MiddlewareHandler struct {
-	OverrideRateLimit bool                 //Optional - set to true if rate limiting is on and this handler will not use it.
-	Handler           func(c *gin.Context) //The handler to be used.
+	Groups  []string             //Optional - what group should this middleware run on. Empty means the default route.
+	Handler func(c *gin.Context) //The handler to be used.
 }
 
 //ServerCertificateConfig holds detail of the certificate config to be used
@@ -63,12 +62,14 @@ type ServerCertificateConfig struct {
 
 //RateLimitConfig specifies the rate limiting config
 type RateLimitConfig struct {
-	Limit  int //The number of requests allowed within the timeframe.
-	Within int //The timeframe(seconds) the requests are allowed in.
+	Groups []string //Optional - which group(s) should the rate limiting run on. Empty means the default route.
+	Limit  int      //The number of requests allowed within the timeframe.
+	Within int      //The timeframe(seconds) the requests are allowed in.
 }
 
 //CorsConfig specifies the CORS related config
 type CorsConfig struct {
+	Groups      []string     //Optional - which group(s) should the CORS config run on. Empty means the default route.
 	Enabled     bool         //Whether CORS is enabled or not.
 	OverrideCfg *cors.Config //Optional. This is only required if you do not want to use the default CORS configuration.
 }
@@ -78,6 +79,8 @@ type Service struct {
 	*http.Server         //Anonymous embedded struct to allow access to http server methods.
 	config       *Config //The config.
 }
+
+var routerMap = make(map[string]*gin.RouterGroup)
 
 // Defining the readiness handler for potential use by k8s
 func readinessHandler() gin.HandlerFunc {
@@ -96,39 +99,75 @@ func rateLimitHandler(limit int, within int) gin.HandlerFunc {
 	})
 }
 
-func setupCors(corsCfg *CorsConfig, group *gin.RouterGroup) {
-	if corsCfg != nil {
-		if corsCfg.Enabled {
-			if corsCfg.OverrideCfg != nil {
-				group.Use(cors.New(*corsCfg.OverrideCfg))
+func setCorsOnRoute(group *gin.RouterGroup, overrideConfig *cors.Config) {
+	if overrideConfig != nil {
+		group.Use(cors.New(*overrideConfig))
+	} else {
+		group.Use(cors.Default())
+	}
+}
+
+func setupCors(engine *gin.Engine, config *CorsConfig) {
+	if config != nil {
+		if config.Enabled {
+			var corsGroup *gin.RouterGroup
+			if len(config.Groups) == 0 {
+				corsGroup = &engine.RouterGroup
+				setCorsOnRoute(corsGroup, config.OverrideCfg)
 			} else {
-				group.Use(cors.Default())
+				for _, rlGroupLabel := range config.Groups {
+					corsGroup = getRouterGroup(engine, rlGroupLabel)
+					setCorsOnRoute(corsGroup, config.OverrideCfg)
+				}
 			}
 		}
 	}
 }
 
-func setupMiddleware(mwHandlers []MiddlewareHandler, group *gin.RouterGroup, rlGroup *gin.RouterGroup) {
-	//Add middleware first then the handlers
-	for _, handler := range mwHandlers {
-		var handlerGroup *gin.RouterGroup
-		if rlGroup != nil && handler.OverrideRateLimit {
-			handlerGroup = rlGroup
+func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
+	if handlerGroup == "" {
+		return &engine.RouterGroup
+	}
+	routeGroup, found := routerMap[handlerGroup]
+	if found {
+		return routeGroup
+	}
+
+	newGroup := engine.Group("/")
+	routerMap[handlerGroup] = newGroup
+	return newGroup
+}
+
+func setupRateLimiting(config *RateLimitConfig, engine *gin.Engine) {
+	if config != nil {
+		if len(config.Groups) == 0 {
+			engine.RouterGroup.Use(rateLimitHandler(config.Limit, config.Within))
 		} else {
-			handlerGroup = group
+			for _, rlGroupLabel := range config.Groups {
+				rlGroup := getRouterGroup(engine, rlGroupLabel)
+				rlGroup.Use(rateLimitHandler(config.Limit, config.Within))
+			}
 		}
-		handlerGroup.Use(handler.Handler)
 	}
 }
 
-func setupEndpoints(handlers []Handler, group *gin.RouterGroup, rlGroup *gin.RouterGroup) {
-	for _, handler := range handlers {
-		var handlerGroup *gin.RouterGroup
-		if rlGroup != nil && !handler.OverrideRateLimit {
-			handlerGroup = rlGroup
+func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
+	//Add middleware first then the handlers
+	for _, handler := range mwHandlers {
+		if len(handler.Groups) == 0 {
+			engine.RouterGroup.Use(handler.Handler)
 		} else {
-			handlerGroup = group
+			for _, handlerGroupLabel := range handler.Groups {
+				handlerGroup := getRouterGroup(engine, handlerGroupLabel)
+				handlerGroup.Use(handler.Handler)
+			}
 		}
+	}
+}
+
+func setupEndpoints(handlers []Handler, engine *gin.Engine) {
+	for _, handler := range handlers {
+		handlerGroup := getRouterGroup(engine, handler.Group)
 		switch method := handler.Method; method {
 		case http.MethodGet, http.MethodPost:
 			handlerGroup.Handle(method, handler.Path, handler.Handler)
@@ -142,6 +181,8 @@ func setupEndpoints(handlers []Handler, group *gin.RouterGroup, rlGroup *gin.Rou
 
 //NewService will setup a new service based on the config and return this service.
 func NewService(cfg *Config) (*Service, error) {
+	//Router map only required in the context of this function
+	routerMap = make(map[string]*gin.RouterGroup)
 	if len(cfg.Handlers) == 0 {
 		return nil, fmt.Errorf("no handlers registered for service")
 	}
@@ -156,28 +197,21 @@ func NewService(cfg *Config) (*Service, error) {
 	router.Use(ginlogrus.Logger(logger))
 
 	//Set CORS to the default if it's enabled and no override passed in.
-	setupCors(cfg.Cors, &router.RouterGroup)
+	setupCors(router, cfg.Cors)
 
 	if cfg.ReadinessCheck {
-		router.GET(ReadinessEndpoint, readinessHandler())
-	}
-
-	if cfg.Auth != nil {
-		router.Use(cfg.Auth)
+		//The readiness handler shouldn't need any middleware to run on it.
+		routerGroup := router.Group("/")
+		routerGroup.GET(ReadinessEndpoint, readinessHandler())
 	}
 
 	if cfg.Metrics {
 		router.Handle(http.MethodGet, "metrics", gin.WrapH(promhttp.Handler()))
 	}
 
-	var rlGroup *gin.RouterGroup
-	if cfg.RateLimit != nil {
-		rlGroup = router.Group("/")
-		rlGroup.Use(rateLimitHandler(cfg.RateLimit.Limit, cfg.RateLimit.Within))
-	}
-
-	setupMiddleware(cfg.MiddlewareHandlers, &router.RouterGroup, rlGroup)
-	setupEndpoints(cfg.Handlers, &router.RouterGroup, rlGroup)
+	setupRateLimiting(cfg.RateLimit, router)
+	setupMiddleware(cfg.MiddlewareHandlers, router)
+	setupEndpoints(cfg.Handlers, router)
 
 	server := &http.Server{
 		Addr:    cfg.ListenAddress,

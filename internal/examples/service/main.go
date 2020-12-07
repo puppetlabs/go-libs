@@ -26,13 +26,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Returning from standard HTTP handler ")
 }
 
-//AuthHandler is a placeholder to illustrate an Auth callback working
-func AuthHandler() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		fmt.Println("In auth")
-	}
-}
-
 func middlewareHandler() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		fmt.Println("In middleware")
@@ -42,7 +35,7 @@ func middlewareHandler() func(c *gin.Context) {
 func main() {
 	handlers := []service.Handler{{Method: http.MethodGet, Path: "/test", Handler: BasicTest()},
 		{Method: http.MethodGet, Path: "/handler", Handler: gin.WrapF(handler)},
-		{Method: http.MethodGet, Path: "/testNoRateLimit", Handler: BasicTest(), OverrideRateLimit: true}}
+		{Method: http.MethodGet, Path: "/testNoRateLimit", Handler: BasicTest(), Group: "notratelimited"}}
 
 	mwHandlers := []service.MiddlewareHandler{{Handler: middlewareHandler()}}
 
@@ -62,7 +55,6 @@ func main() {
 		CertConfig:         certConfig,
 		LogLevel:           "WARN",
 		ReadinessCheck:     true,
-		Auth:               AuthHandler(),
 		RateLimit:          rateLimitConfig,
 		MiddlewareHandlers: mwHandlers,
 		Metrics:            true,

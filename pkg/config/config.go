@@ -101,6 +101,9 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 				return nil, err
 			}
 			err = mergo.Merge(&flatMap, flatInnerMap)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			flatMap[k] = v
 		}

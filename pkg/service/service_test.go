@@ -30,7 +30,15 @@ type headers struct {
 	Value string
 }
 
-func checkResponseCode(method string, url string, cfg Config, code int, reqHeaders ...headers) (*httptest.ResponseRecorder, error) {
+func setupService(cfg *Config) (*Service, error) {
+	svc, err := NewService(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create service config %s", err)
+	}
+	return svc, nil
+}
+
+func sendRequest(svc *Service, method string, url string, reqHeaders ...headers) (*httptest.ResponseRecorder, error) {
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
@@ -41,12 +49,18 @@ func checkResponseCode(method string, url string, cfg Config, code int, reqHeade
 		req.Header.Set(header.Name, header.Value)
 	}
 
-	svc, err := NewService(&cfg)
+	svc.Handler.ServeHTTP(rr, req)
+	return rr, nil
+}
+
+func checkResponseCode(method string, url string, cfg Config, code int, reqHeaders ...headers) (*httptest.ResponseRecorder, error) {
+
+	svc, err := setupService(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create service config %s", err)
 	}
-	svc.Handler.ServeHTTP(rr, req)
 
+	rr, err := sendRequest(svc, method, url, reqHeaders...)
 	if rr.Code != code {
 		return nil, fmt.Errorf("Unexpected response code %d. Expected %d", rr.Code, code)
 	}
@@ -61,19 +75,11 @@ func helloWorldHandler() func(c *gin.Context) {
 	}
 }
 
-//authForbidHandler returns forbidden
-func authForbidHandler() func(c *gin.Context) {
+//returnWithResponseCode returns the code that is passed in
+func returnWithResponseCode(httpStatus int) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		//Return what would be returned if access is denied.
-		c.AbortWithStatus(http.StatusForbidden)
-	}
-}
-
-//middlewareHandler returns a continue
-func middlewareHandler() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		//Random response code picked which returns immediately and is easy to test for
-		c.AbortWithStatus(http.StatusContinue)
+		c.AbortWithStatus(httpStatus)
 	}
 }
 
@@ -118,23 +124,81 @@ func TestRegisteredHandlerReturnsCorrectResponse(t *testing.T) {
 
 }
 
-func TestAuthHandlerForbidsRequest(t *testing.T) {
+func TestMultipleGroupsMiddleware(t *testing.T) {
+	mwHandlers := []MiddlewareHandler{{Groups: []string{"returnAccepted"}, Handler: returnWithResponseCode(http.StatusAccepted)},
+		{Groups: []string{"returnAlreadyReported"}, Handler: returnWithResponseCode(http.StatusAlreadyReported)}}
+
+	handlers := []Handler{{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/accept", Group: "returnAccepted"},
+		{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/reported", Group: "returnAlreadyReported"}}
+
 	cfg := Config{
-		ListenAddress: ":8888",
-		Handlers:      []Handler{{Method: AnyMethod, Handler: helloWorldHandler(), Path: testEndpoint}},
-		Auth:          authForbidHandler(),
+		ListenAddress:      ":8888",
+		Handlers:           handlers,
+		MiddlewareHandlers: mwHandlers,
 	}
-	_, err := checkResponseCode("GET", testEndpoint, cfg, http.StatusForbidden)
+
+	svc, err := setupService(&cfg)
 	if err != nil {
 		t.Error(err)
 	}
+
+	acceptRr, err := sendRequest(svc, http.MethodGet, "/accept")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if acceptRr.Code != http.StatusAccepted {
+		t.Errorf("Expected status %d but got %d.", http.StatusAccepted, acceptRr.Code)
+	}
+
+	reportRr, err := sendRequest(svc, http.MethodGet, "/reported")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if reportRr.Code != http.StatusAlreadyReported {
+		t.Errorf("Expected status %d but got %d.", http.StatusAlreadyReported, reportRr.Code)
+	}
+}
+
+func TestMultipleGroupsCors(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers: []Handler{{Group: "alloworigin", Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Group: "nocors", Method: http.MethodGet, Handler: helloWorldHandler(), Path: "/nocors"}},
+		Cors: &CorsConfig{Groups: []string{"alloworigin"}, Enabled: true, OverrideCfg: &cors.Config{AllowOrigins: []string{allowedOrigin}}},
+	}
+
+	originHeader := headers{Name: "Origin", Value: "https://wwww.notallowedorigin.com/"}
+	svc, err := setupService(&cfg)
+	if err != nil {
+		t.Error(err)
+	}
+
+	forbiddenRr, err := sendRequest(svc, http.MethodGet, testEndpoint, originHeader)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if forbiddenRr.Code != http.StatusForbidden {
+		t.Errorf("Expected status %d but got %d.", http.StatusForbidden, forbiddenRr.Code)
+	}
+
+	allowedRr, err := sendRequest(svc, http.MethodGet, "/nocors", originHeader)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if allowedRr.Code != http.StatusOK {
+		t.Errorf("Expected status %d but got %d.", http.StatusForbidden, allowedRr.Code)
+	}
+
 }
 
 func TestReadinessHandler(t *testing.T) {
 	cfg := Config{
 		ListenAddress:  ":8888",
 		Handlers:       []Handler{{Method: AnyMethod, Handler: helloWorldHandler(), Path: testEndpoint}},
-		Auth:           authForbidHandler(),
 		ReadinessCheck: true,
 	}
 	rr, err := checkResponseCode(http.MethodGet, readinessEndpoint, cfg, http.StatusOK)
@@ -159,7 +223,7 @@ func TestAddMiddleware(t *testing.T) {
 	cfg := Config{
 		ListenAddress:      ":8888",
 		Handlers:           []Handler{{Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint}},
-		MiddlewareHandlers: []MiddlewareHandler{{Handler: middlewareHandler()}},
+		MiddlewareHandlers: []MiddlewareHandler{{Handler: returnWithResponseCode(http.StatusContinue)}},
 	}
 	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, http.StatusContinue)
 	if err != nil {
