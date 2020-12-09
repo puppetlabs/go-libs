@@ -61,6 +61,9 @@ func checkResponseCode(method string, url string, cfg Config, code int, reqHeade
 	}
 
 	rr, err := sendRequest(svc, method, url, reqHeaders...)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create  client request due to error %s", err)
+	}
 	if rr.Code != code {
 		return nil, fmt.Errorf("Unexpected response code %d. Expected %d", rr.Code, code)
 	}

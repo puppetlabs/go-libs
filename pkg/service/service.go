@@ -182,7 +182,6 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) {
 //NewService will setup a new service based on the config and return this service.
 func NewService(cfg *Config) (*Service, error) {
 	//Router map only required in the context of this function
-	routerMap = make(map[string]*gin.RouterGroup)
 	if len(cfg.Handlers) == 0 {
 		return nil, fmt.Errorf("no handlers registered for service")
 	}
