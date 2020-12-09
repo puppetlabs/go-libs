@@ -76,7 +76,6 @@ fi
 echo "Would you like the default prometheus metrics?(y|n)"
 read metrics < /dev/stdin
 validate_choice $metrics
-BUILDARGS="${BUILDARGS} -X main.readinessCheckEnabled=${metrics}"'"'
+BUILDARGS="${BUILDARGS} -X main.metricsEnabled=${metrics}"'"'
 
-#cmd="go run $BUILDARGS cmd/service-generator/main.go"
 eval "go run $BUILDARGS cmd/service-generator/main.go"

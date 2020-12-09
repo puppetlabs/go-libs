@@ -50,10 +50,13 @@ type TestStruct struct {
 ``` 
 #### Nested Structs
  ```  
-//InnerStruct is the nested struct type InnerStruct struct {    
+//InnerStruct is the nested struct 
+type InnerStruct struct {    
  TestNestInner string `env:"TEST_NEST_INNER" default:"inner"`  
-}    
- //OuterStruct is the struct containing the nested struct type OuterStruct struct {    
+}
+    
+//OuterStruct is the struct containing the nested struct 
+type OuterStruct struct {    
  TestNestOuter string `env:"TEST_NEST_OUTER" default:"outer"` InnerStruct  
 }
 ```
