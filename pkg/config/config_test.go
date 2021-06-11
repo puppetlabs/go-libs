@@ -231,3 +231,12 @@ func TestReadYamlConfigWithEnvOverride(t *testing.T) {
 		t.Errorf("Viper config %v is not equal to expected config %v", actual, expected)
 	}
 }
+
+func TestLoadViperConfigFromFileNoFileExtension(t *testing.T) {
+	os.Clearenv()
+	var actual AppConfig
+	err := LoadViperConfigFromFile("./nofile", &actual)
+	if err == nil {
+		t.Error("File with no extension should error")
+	}
+}

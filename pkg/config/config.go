@@ -115,12 +115,16 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 //The config will be read from a file but environment variables override and default values can still be set. The file can
 // be anything that Viper supports. N.B. This only supports anonymous nested structs.
 func LoadViperConfigFromFile(filename string, cfg interface{}) error {
+	if len(filepath.Ext(filename)) < 1 {
+		return fmt.Errorf("missing file extension")
+	}
+
 	reader, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return err
 	}
 
-	err = LoadViperConfigFromReader(reader, cfg, filepath.Ext(filename))
+	err = LoadViperConfigFromReader(reader, cfg, filepath.Ext(filename)[1:])
 
 	//N.B. Deferring a file close is bad practise so making it key part of function.
 	fileCloseErr := reader.Close()
