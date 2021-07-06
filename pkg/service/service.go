@@ -169,7 +169,7 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) {
 	for _, handler := range handlers {
 		handlerGroup := getRouterGroup(engine, handler.Group)
 		switch method := handler.Method; method {
-		case http.MethodGet, http.MethodPost:
+		case http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete:
 			handlerGroup.Handle(method, handler.Path, handler.Handler)
 		case AnyMethod:
 			handlerGroup.Any(handler.Path, handler.Handler)
