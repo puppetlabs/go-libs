@@ -38,6 +38,8 @@ type Config struct {
 	RateLimit          *RateLimitConfig         //Optional rate limiting config
 	MiddlewareHandlers []MiddlewareHandler      //Optional middleware handlers which will be run on every request
 	Metrics            bool                     //Optional. If true a prometheus metrics endpoint will be exposed at /metrics/
+	ReadTimeout        time.Duration            //Optional. Duration in Seconds
+	WriteTimeout       time.Duration            //Optional. Duration in seconds
 }
 
 //Handler will hold all the callback handlers to be registered. N.B. gin will be used.
@@ -124,6 +126,16 @@ func setupCors(engine *gin.Engine, config *CorsConfig) {
 	}
 }
 
+// func setDefaultTimouts(Config *Config) {
+// 	if Config.ReadTimeout == 0 {
+// 		Config.ReadTimeout = 10 * time.Millisecond
+// 	}
+
+// 	if Config.WriteTimeout == 0 {
+// 		Config.WriteTimeout = 10 * time.Millisecond
+// 	}
+// }
+
 func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
 	if handlerGroup == "" {
 		return &engine.RouterGroup
@@ -165,7 +177,13 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 	}
 }
 
-func setupEndpoints(handlers []Handler, engine *gin.Engine) {
+func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Error caught: %s", r)
+		}
+	}()
+
 	for _, handler := range handlers {
 		handlerGroup := getRouterGroup(engine, handler.Group)
 		switch method := handler.Method; method {
@@ -177,6 +195,7 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) {
 			logrus.Warnf("HTTP method %s unsupported.", method)
 		}
 	}
+	return nil
 }
 
 //NewService will setup a new service based on the config and return this service.
@@ -208,13 +227,20 @@ func NewService(cfg *Config) (*Service, error) {
 		router.Handle(http.MethodGet, "metrics", gin.WrapH(promhttp.Handler()))
 	}
 
+	// setDefaultTimouts(cfg)
 	setupRateLimiting(cfg.RateLimit, router)
 	setupMiddleware(cfg.MiddlewareHandlers, router)
-	setupEndpoints(cfg.Handlers, router)
+	err := setupEndpoints(cfg.Handlers, router)
+
+	if err != nil {
+		return nil, err
+	}
 
 	server := &http.Server{
-		Addr:    cfg.ListenAddress,
-		Handler: router,
+		Addr:         cfg.ListenAddress,
+		Handler:      router,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
 	}
 
 	return &Service{Server: server, config: cfg}, nil
@@ -237,6 +263,8 @@ func (s *Service) waitForShutdown() error {
 
 //Run will run the service in the foreground and exit when the server exits
 func (s *Service) Run() error {
+	log.SetLogLevel(s.config.LogLevel)
+
 	go func() {
 		if s.config.CertConfig != nil {
 			if err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile); err != http.ErrServerClosed {
@@ -249,7 +277,6 @@ func (s *Service) Run() error {
 		}
 	}()
 
-	log.SetLogLevel(s.config.LogLevel)
 	//We want a graceful exit
 	if err := s.waitForShutdown(); err != nil {
 		return err

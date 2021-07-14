@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gin-contrib/cors"
 
@@ -29,6 +30,8 @@ type headers struct {
 	Name  string
 	Value string
 }
+
+var validMethods = []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete}
 
 func setupService(cfg *Config) (*Service, error) {
 	svc, err := NewService(cfg)
@@ -71,8 +74,39 @@ func checkResponseCode(method string, url string, cfg Config, code int, reqHeade
 	return rr, nil
 }
 
+func checkMultipleResponseCodes(methods []string, url string, cfg Config, code int, reqHeaders ...headers) ([]*httptest.ResponseRecorder, error) {
+
+	svc, err := setupService(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create service config %s", err)
+	}
+
+	var responses []*httptest.ResponseRecorder
+
+	for _, method := range methods {
+		rr, err := sendRequest(svc, method, url, reqHeaders...)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create  client request due to error %s", err)
+		}
+		if rr.Code != code {
+			return nil, fmt.Errorf("Unexpected response code %d. Expected %d", rr.Code, code)
+		}
+
+		responses = append(responses, rr)
+	}
+
+	return responses, nil
+}
+
 //helloWorldHandler is a placeholder
 func helloWorldHandler() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello World.")
+	}
+}
+
+func handlerWithWait(waitLength time.Duration) func(c *gin.Context) {
+	time.Sleep(waitLength * time.Second)
 	return func(c *gin.Context) {
 		c.String(http.StatusOK, "Hello World.")
 	}
@@ -107,6 +141,91 @@ func TestNoHandlerErrors(t *testing.T) {
 		t.Error("No registered handlers should cause error.")
 	}
 }
+
+func TestAnyMethod(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers:      []Handler{{Method: AnyMethod, Handler: helloWorldHandler(), Path: testEndpoint}},
+	}
+
+	_, err := checkMultipleResponseCodes(validMethods, testEndpoint, cfg, http.StatusOK)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestIndividualHTTPMethodsGoodEnpoints(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers: []Handler{
+			{Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Method: http.MethodPost, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Method: http.MethodPatch, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Method: http.MethodDelete, Handler: helloWorldHandler(), Path: testEndpoint},
+		},
+	}
+
+	_, err := checkMultipleResponseCodes(validMethods, testEndpoint, cfg, http.StatusOK)
+	if err != nil {
+		t.Error("Good endpoints should be returning ok status codes")
+	}
+}
+
+func TestIndividualHTTPMethodsBadEndpoints(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers: []Handler{
+			{Method: http.MethodGet, Handler: helloWorldHandler(), Path: "/valid"},
+		},
+	}
+
+	_, err := checkMultipleResponseCodes(validMethods, "/notvalid", cfg, http.StatusNotFound)
+	if err != nil {
+		t.Error("Bad endpoints should be returning not found status codes")
+	}
+}
+
+func TestClashingHandlers(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers: []Handler{
+			{Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
+		},
+	}
+
+	_, err := NewService(&cfg)
+	if err == nil {
+		t.Error("Clashing handlers should cause error")
+	}
+}
+
+// func TestReadTimeout(t *testing.T) {
+// 	cfg := Config{
+// 		ListenAddress: ":8888",
+// 		Handlers: []Handler{
+// 			{Method: http.MethodGet, Handler: handlerWithWait(2), Path: testEndpoint},
+// 		},
+// 		ReadTimeout:  1 * time.Microsecond,
+// 		WriteTimeout: 1 * time.Microsecond,
+// 	}
+
+// 	startTime := time.Now()
+
+// 	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, http.StatusOK)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+
+// 	duration := time.Now().Sub(startTime)
+
+// 	if duration > 1*time.Second {
+// 		t.Errorf("Greater: %v", duration)
+// 	} else {
+// 		t.Errorf("less than: %v", duration)
+// 	}
+
+// }
 
 func TestRegisteredHandlerReturnsCorrectResponse(t *testing.T) {
 	cfg := Config{
