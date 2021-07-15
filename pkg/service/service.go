@@ -38,8 +38,6 @@ type Config struct {
 	RateLimit          *RateLimitConfig         //Optional rate limiting config
 	MiddlewareHandlers []MiddlewareHandler      //Optional middleware handlers which will be run on every request
 	Metrics            bool                     //Optional. If true a prometheus metrics endpoint will be exposed at /metrics/
-	ReadTimeout        time.Duration            //Optional. Duration in Seconds
-	WriteTimeout       time.Duration            //Optional. Duration in seconds
 }
 
 //Handler will hold all the callback handlers to be registered. N.B. gin will be used.
@@ -125,16 +123,6 @@ func setupCors(engine *gin.Engine, config *CorsConfig) {
 		}
 	}
 }
-
-// func setDefaultTimouts(Config *Config) {
-// 	if Config.ReadTimeout == 0 {
-// 		Config.ReadTimeout = 10 * time.Millisecond
-// 	}
-
-// 	if Config.WriteTimeout == 0 {
-// 		Config.WriteTimeout = 10 * time.Millisecond
-// 	}
-// }
 
 func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
 	if handlerGroup == "" {
@@ -227,7 +215,6 @@ func NewService(cfg *Config) (*Service, error) {
 		router.Handle(http.MethodGet, "metrics", gin.WrapH(promhttp.Handler()))
 	}
 
-	// setDefaultTimouts(cfg)
 	setupRateLimiting(cfg.RateLimit, router)
 	setupMiddleware(cfg.MiddlewareHandlers, router)
 	err := setupEndpoints(cfg.Handlers, router)
@@ -237,10 +224,8 @@ func NewService(cfg *Config) (*Service, error) {
 	}
 
 	server := &http.Server{
-		Addr:         cfg.ListenAddress,
-		Handler:      router,
-		ReadTimeout:  cfg.ReadTimeout,
-		WriteTimeout: cfg.WriteTimeout,
+		Addr:    cfg.ListenAddress,
+		Handler: router,
 	}
 
 	return &Service{Server: server, config: cfg}, nil

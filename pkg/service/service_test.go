@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/gin-contrib/cors"
 
@@ -105,13 +104,6 @@ func helloWorldHandler() func(c *gin.Context) {
 	}
 }
 
-func handlerWithWait(waitLength time.Duration) func(c *gin.Context) {
-	time.Sleep(waitLength * time.Second)
-	return func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello World.")
-	}
-}
-
 //returnWithResponseCode returns the code that is passed in
 func returnWithResponseCode(httpStatus int) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -199,33 +191,6 @@ func TestClashingHandlers(t *testing.T) {
 		t.Error("Clashing handlers should cause error")
 	}
 }
-
-// func TestReadTimeout(t *testing.T) {
-// 	cfg := Config{
-// 		ListenAddress: ":8888",
-// 		Handlers: []Handler{
-// 			{Method: http.MethodGet, Handler: handlerWithWait(2), Path: testEndpoint},
-// 		},
-// 		ReadTimeout:  1 * time.Microsecond,
-// 		WriteTimeout: 1 * time.Microsecond,
-// 	}
-
-// 	startTime := time.Now()
-
-// 	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, http.StatusOK)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	duration := time.Now().Sub(startTime)
-
-// 	if duration > 1*time.Second {
-// 		t.Errorf("Greater: %v", duration)
-// 	} else {
-// 		t.Errorf("less than: %v", duration)
-// 	}
-
-// }
 
 func TestRegisteredHandlerReturnsCorrectResponse(t *testing.T) {
 	cfg := Config{
