@@ -165,7 +165,13 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 	}
 }
 
-func setupEndpoints(handlers []Handler, engine *gin.Engine) {
+func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Error caught: %s", r)
+		}
+	}()
+
 	for _, handler := range handlers {
 		handlerGroup := getRouterGroup(engine, handler.Group)
 		switch method := handler.Method; method {
@@ -177,6 +183,7 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) {
 			logrus.Warnf("HTTP method %s unsupported.", method)
 		}
 	}
+	return nil
 }
 
 //NewService will setup a new service based on the config and return this service.
@@ -210,7 +217,11 @@ func NewService(cfg *Config) (*Service, error) {
 
 	setupRateLimiting(cfg.RateLimit, router)
 	setupMiddleware(cfg.MiddlewareHandlers, router)
-	setupEndpoints(cfg.Handlers, router)
+	err := setupEndpoints(cfg.Handlers, router)
+
+	if err != nil {
+		return nil, err
+	}
 
 	server := &http.Server{
 		Addr:    cfg.ListenAddress,
@@ -237,6 +248,8 @@ func (s *Service) waitForShutdown() error {
 
 //Run will run the service in the foreground and exit when the server exits
 func (s *Service) Run() error {
+	log.SetLogLevel(s.config.LogLevel)
+
 	go func() {
 		if s.config.CertConfig != nil {
 			if err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile); err != http.ErrServerClosed {
@@ -249,7 +262,6 @@ func (s *Service) Run() error {
 		}
 	}()
 
-	log.SetLogLevel(s.config.LogLevel)
 	//We want a graceful exit
 	if err := s.waitForShutdown(); err != nil {
 		return err

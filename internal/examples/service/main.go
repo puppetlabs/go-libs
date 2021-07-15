@@ -35,7 +35,7 @@ func middlewareHandler() func(c *gin.Context) {
 func main() {
 	handlers := []service.Handler{{Method: http.MethodGet, Path: "/test", Handler: BasicTest()},
 		{Method: http.MethodGet, Path: "/handler", Handler: gin.WrapF(handler)},
-		{Method: http.MethodGet, Path: "/testNoRateLimit", Handler: BasicTest(), Group: "notratelimited"}}
+		{Method: http.MethodGet, Path: "/testRateLimit", Handler: BasicTest(), Group: "ratelimited"}}
 
 	mwHandlers := []service.MiddlewareHandler{{Handler: middlewareHandler()}}
 
@@ -47,7 +47,7 @@ func main() {
 	certConfig := &service.ServerCertificateConfig{CertificateFile: fmt.Sprintf("%s/server.crt", wd),
 		KeyFile: fmt.Sprintf("%s/server.key", wd)}
 
-	rateLimitConfig := &service.RateLimitConfig{Limit: 1, Within: 1}
+	rateLimitConfig := &service.RateLimitConfig{Groups: []string{"ratelimited"}, Limit: 1, Within: 1}
 
 	cfg := &service.Config{ListenAddress: ":8888",
 		Cors:               &service.CorsConfig{Enabled: true},
