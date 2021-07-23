@@ -47,11 +47,7 @@ sec: $(GOPATH)/bin/gosec
 
 test:
 	@echo "$(OK_COLOR)==> Running tests$(NO_COLOR)"
-ifndef CI
 	@go test -v -race -cover ./... || exit 1
-else
-	@go test -v -race -cover ./... 2>&1 | go-junit-report > report.xml
-endif
 
 #This target is to make sure code changes have not broken the templates - no actual tests will be run.
 test_generated_service:
@@ -81,7 +77,7 @@ $(GO_BINARIES)/CompileDaemon:
 
 $(GOPATH)/bin/gosec:
 	@echo "🔘 Installing gosec ... (`date '+%H:%M:%S'`)"
-	@curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(GOPATH)/bin
+	@go get -u github.com/securego/gosec/v2/cmd/gosec
 
 init-hooks: # Set hooks path for this repo
 	git config core.hooksPath .hooks
