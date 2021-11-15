@@ -61,7 +61,8 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 			if err != nil {
 				logrus.Warnf("Unable to read file %s due to error %s.", fileTag, err)
 			}
-			v.SetDefault(f.Name, string(fileBytes))
+
+			v.SetDefault(f.Name, fileBytes)
 			fileDefaultSet = true
 		}
 
