@@ -44,8 +44,8 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	certConfig := &service.ServerCertificateConfig{CertificateFile: fmt.Sprintf("%s/server.crt", wd),
-		KeyFile: fmt.Sprintf("%s/server.key", wd)}
+	certConfig := &service.ServerCertificateConfig{CertificateFile: fmt.Sprintf("%s/internal/examples/server.crt", wd),
+		KeyFile: fmt.Sprintf("%s/internal/examples/server.key", wd)}
 
 	rateLimitConfig := &service.RateLimitConfig{Groups: []string{"ratelimited"}, Limit: 1, Within: 1}
 
