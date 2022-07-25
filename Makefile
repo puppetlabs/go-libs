@@ -36,6 +36,11 @@ lint: tools
 	@echo "$(OK_COLOR)==> Checking code style with 'golint' tool$(NO_COLOR)"
 	@golint -set_exit_status ./... || exit 1
 
+# run gci and gofumpt to improve formatting of Go files
+reformat:
+	gci write ./
+	gofumpt -l -w ./
+
 PHONY+= sec
 sec: $(GOPATH)/bin/gosec
 	@echo "🔘 Checking for security problems ... (`date '+%H:%M:%S'`)"
@@ -63,7 +68,7 @@ build:
 
 ################################################################################
 #  Tools and Deps                                                              #
-#  The following targets install dependancies and tools required for the build #
+#  The following targets install dependencies and tools required for the build #
 ################################################################################
 tools: $(GO_BINARIES)/golint $(GO_BINARIES)/goimports $(GO_BINARIES)/CompileDaemon $(GOPATH)/bin/gosec
 $(GO_BINARIES)/golint:
