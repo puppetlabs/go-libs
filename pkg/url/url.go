@@ -2,6 +2,7 @@
 package url
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -14,12 +15,17 @@ const (
 	portSeparator   = ":"
 )
 
+var (
+	errEmptyInput    = errors.New("input cannot be empty")
+	errMissingScheme = errors.New("no scheme available")
+)
+
 // BuildURL assumes input is a url and converts it into the format: scheme://host[:<port>]
 func BuildURL(input string, defaultScheme string, defaultPort int) (string, error) {
 	var result string
 
 	if len(input) == 0 {
-		return "", fmt.Errorf("input cannot be empty")
+		return "", errEmptyInput
 	}
 
 	// Save the scheme
@@ -30,7 +36,7 @@ func BuildURL(input string, defaultScheme string, defaultPort int) (string, erro
 		result = parts[1]
 	} else {
 		if len(defaultScheme) == 0 {
-			return "", fmt.Errorf("no scheme available")
+			return "", errMissingScheme
 		}
 		scheme = defaultScheme
 		result = input

@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -21,6 +22,8 @@ type KeyPair struct {
 	Certificate []byte
 	PrivateKey  []byte
 }
+
+var errNilPointerForCAKeyPair = errors.New("nil pointer for root CA key pair")
 
 var subject = pkix.Name{
 	Organization:       []string{"Puppet, Inc"},
@@ -61,7 +64,7 @@ func GenerateCA() (*KeyPair, error) {
 
 	marshalPublicKey, err := x509.MarshalPKIXPublicKey(privateKey.Public())
 	if err != nil {
-		return nil, fmt.Errorf("can't marshal public key because: %s", err)
+		return nil, fmt.Errorf("can't marshal public key because: %w", err)
 	}
 
 	subjectKeyID := sha256.Sum256(marshalPublicKey)
@@ -82,7 +85,7 @@ func GenerateCA() (*KeyPair, error) {
 
 	certificate, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, fmt.Errorf("can't create certificate because: %s", err)
+		return nil, fmt.Errorf("can't create certificate because: %w", err)
 	}
 
 	keyPair := KeyPair{
@@ -97,17 +100,17 @@ func GenerateCA() (*KeyPair, error) {
 // hostnames and with the given CN.
 func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*KeyPair, error) {
 	if ca == nil {
-		return nil, fmt.Errorf("nil pointer for root CA key pair")
+		return nil, errNilPointerForCAKeyPair
 	}
 
 	tlsKeyPair, err := tls.X509KeyPair(ca.Certificate, ca.PrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("can't convert to X509KeyPair because: %s", err)
+		return nil, fmt.Errorf("can't convert to X509KeyPair because: %w", err)
 	}
 
 	caCert, err := x509.ParseCertificate(tlsKeyPair.Certificate[0])
 	if err != nil {
-		return nil, fmt.Errorf("can't parse ca certificate because: %s", err)
+		return nil, fmt.Errorf("can't parse ca certificate because: %w", err)
 	}
 
 	// choose a random number between 0 and 999999999999999999
@@ -117,12 +120,12 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, fmt.Errorf("can't create private key because: %s", err)
+		return nil, fmt.Errorf("can't create private key because: %w", err)
 	}
 
 	marshalPublicKey, err := x509.MarshalPKIXPublicKey(privateKey.Public())
 	if err != nil {
-		return nil, fmt.Errorf("can't marshal public key because: %s", err)
+		return nil, fmt.Errorf("can't marshal public key because: %w", err)
 	}
 
 	subjectKeyID := sha256.Sum256(marshalPublicKey)
@@ -164,7 +167,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	certificate, err := x509.CreateCertificate(rand.Reader, template, caCert, &privateKey.PublicKey,
 		tlsKeyPair.PrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("can't create certificate because: %s", err)
+		return nil, fmt.Errorf("can't create certificate because: %w", err)
 	}
 
 	keyPair := KeyPair{

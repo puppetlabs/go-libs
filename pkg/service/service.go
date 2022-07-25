@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -77,6 +78,11 @@ type Service struct {
 	*http.Server         // Anonymous embedded struct to allow access to http server methods.
 	config       *Config // The config.
 }
+
+var (
+	errNoHandlersRegisteredForService = errors.New("no handlers registered for service")
+	errInvalidListenAddress           = errors.New("invalid listen address")
+)
 
 var routerMap = make(map[string]*gin.RouterGroup)
 
@@ -166,7 +172,7 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("error caught: %s", r)
+			err = fmt.Errorf("error caught: %w", r.(error))
 		}
 	}()
 
@@ -188,11 +194,11 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 func NewService(cfg *Config) (*Service, error) {
 	// Router map only required in the context of this function
 	if len(cfg.Handlers) == 0 {
-		return nil, fmt.Errorf("no handlers registered for service")
+		return nil, errNoHandlersRegisteredForService
 	}
 
 	if cfg.ListenAddress == "" {
-		return nil, fmt.Errorf("listen address must be valid")
+		return nil, errInvalidListenAddress
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -250,11 +256,11 @@ func (s *Service) Run() error {
 	go func() {
 		if s.config.CertConfig != nil {
 			err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile)
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				logrus.Fatalf("Failed to start query service: %s\n", err)
 			}
 		} else {
-			if err := s.Server.ListenAndServe(); err != http.ErrServerClosed {
+			if err := s.Server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				logrus.Fatalf("Failed to start query service: %s\n", err)
 			}
 		}

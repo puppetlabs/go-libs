@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	errEmptyEnvTagForField           = errors.New("empty env tag for field")
+	errInvalidConfigType             = errors.New("config type must be either a pointer to a struct or a struct")
+	errMissingFileExtension          = errors.New("missing file extension")
+	errViperConfigNonPointerArgument = errors.New("reading Viper config requires a pointer argument")
+)
+
 func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 	// Get the type from the pointer or the struct itself - N.B. It will be a struct when called recursively.
 	var t reflect.Type
@@ -25,7 +33,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 	case reflect.Struct:
 		t = reflect.TypeOf(cfg)
 	default:
-		return fmt.Errorf("config type must be either a pointer to a struct or a struct")
+		return errInvalidConfigType
 	}
 
 	for i := 0; i < t.NumField(); i++ {
@@ -47,10 +55,10 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 		// The env tag is mandatory. It not present or we fail to set it up then error.
 		if envTag, ok := f.Tag.Lookup("env"); ok {
 			if err := v.BindEnv(f.Name, envTag); err != nil {
-				return fmt.Errorf("unable to bind %s to environment variable %s", f.Name, envTag)
+				return fmt.Errorf("unable to bind %s to environment variable %s: %w", f.Name, envTag, err)
 			}
 		} else {
-			return fmt.Errorf("empty env tag for field %s", f.Name)
+			return fmt.Errorf("%w: %s", errEmptyEnvTagForField, f.Name)
 		}
 
 		var fileDefaultSet bool
@@ -79,7 +87,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 // LoadViperConfig populates the cfg structure passed in (it must be the address passed in).
 func LoadViperConfig(cfg interface{}) error {
 	if reflect.TypeOf(cfg).Kind() != reflect.Ptr {
-		return fmt.Errorf("reading viper config requires a pointer argument")
+		return errViperConfigNonPointerArgument
 	}
 	v := viper.New()
 	err := setupViperConfig(cfg, v)
@@ -117,7 +125,7 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 // The file can be anything that Viper supports. N.B. This only supports anonymous nested structs.
 func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 	if len(filepath.Ext(filename)) < 1 {
-		return fmt.Errorf("missing file extension")
+		return errMissingFileExtension
 	}
 
 	reader, err := os.Open(filepath.Clean(filename))
@@ -146,7 +154,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return fmt.Errorf("%w", err)
 	}
 
-	// Reading in config from a source with multiple levels (usually a config file) will produce a multi-dimensional map
+	// Reading in config from a source with multiple levels (usually a config file) will produce a multidimensional map
 	// whereas reading from a struct produces a flattened map. Flattening the map from the reader and merging with the
 	// already flattened struct map aligns this.
 	flatCfgMap, err := flattenCfgMap(v.AllSettings())

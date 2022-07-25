@@ -4,7 +4,7 @@ Package concurrency contains code that helps build multi-threaded applications
 package concurrency
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,6 +34,8 @@ type Dispatcher interface {
 	SubmitWork(fn func() error) error
 	ProcessedJobs() uint64
 }
+
+var errTimedOutWaitingToSubmitTask = errors.New("timed out waiting to submit task")
 
 // NewDispatcher create a new Dispatcher.  The ID is used to identify the dispatcher in log messages.
 // workers is the number of go routines that this dispatcher will create to process work.
@@ -109,7 +111,7 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	select {
 	case queue <- task:
 	case <-timeout:
-		return fmt.Errorf("timed out waiting to submit task")
+		return errTimedOutWaitingToSubmitTask
 	}
 	return nil
 }
