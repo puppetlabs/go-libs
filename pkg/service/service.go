@@ -229,9 +229,11 @@ func NewService(cfg *Config) (*Service, error) {
 		return nil, err
 	}
 
+	readHeaderTimeoutSeconds := 5
 	server := &http.Server{
-		Addr:    cfg.ListenAddress,
-		Handler: router,
+		Addr:              cfg.ListenAddress,
+		Handler:           router,
+		ReadHeaderTimeout: time.Duration(readHeaderTimeoutSeconds) * time.Second,
 	}
 
 	return &Service{Server: server, config: cfg}, nil
