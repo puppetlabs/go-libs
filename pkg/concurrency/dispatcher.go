@@ -84,7 +84,7 @@ func (d *dispatcher) SubmitWork(fn func() error) error {
 }
 
 // ProcessedJobs returns the number of jobs that have been executed by this instance
-// of the disptacher
+// of the dispatcher.
 func (d *dispatcher) ProcessedJobs() uint64 {
 	return d.ops
 }
@@ -114,8 +114,8 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	return nil
 }
 
-// dispatcher.  This keeps state for the dispatcher, including a unique name, the number of works to create
-// and a channel of tasks to be processed.  A dispatcher
+// dispatcher keeps state for the dispatcher, including a unique name, the number of works to create
+// and a channel of tasks to be processed.
 type dispatcher struct {
 	ID      string
 	workers int

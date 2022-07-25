@@ -15,7 +15,7 @@ import (
 )
 
 // KeyPair stores a PEM encoded certificate and
-// a PEM encoded RSA private key
+// a PEM encoded RSA private key.
 type KeyPair struct {
 	Certificate []byte
 	PrivateKey  []byte
@@ -29,7 +29,7 @@ var subject = pkix.Name{
 	Locality:           []string{"Portland"},
 }
 
-//HostNames contains the list of hosts the cert will be generated for
+// HostNames contains the list of hosts the cert will be generated for.
 type HostNames []string
 
 func (h *HostNames) String() string {
@@ -40,13 +40,13 @@ func (h *HostNames) String() string {
 	return output
 }
 
-//Set will add the hostname to the hostname array
+// Set will add the hostname to the hostname array.
 func (h *HostNames) Set(value string) error {
 	*h = append(*h, value)
 	return nil
 }
 
-// GenerateCA will generate a new CA key/cert pair
+// GenerateCA will generate a new CA key/cert pair.
 func GenerateCA() (*KeyPair, error) {
 	// choose a random number between 0 and 999999999999999999
 	randomNum, _ := rand.Int(rand.Reader, big.NewInt(999999999999999999))

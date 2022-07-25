@@ -21,68 +21,68 @@ import (
 )
 
 const (
-	//AnyMethod should be passed when a handler wants to support any HTTP method.
+	// AnyMethod should be passed when a handler wants to support any HTTP method.
 	AnyMethod = "Any"
-	//ReadinessEndpoint is the default URL for a readiness endpoint
+	// ReadinessEndpoint is the default URL for a readiness endpoint
 	ReadinessEndpoint = "/readiness"
 )
 
-//Config will hold the configuration of the service.
+// Config will hold the configuration of the service.
 type Config struct {
-	ListenAddress      string                   //Address in the format [host/ip]:port. Mandatory
-	LogLevel           string                   //INFO,FATAL,ERROR,WARN, DEBUG, TRACE
-	Cors               *CorsConfig              //Optional cors config
-	ReadinessCheck     bool                     //Set to true to add a readiness handler at /readiness.
-	Handlers           []Handler                //Array of handlers
-	CertConfig         *ServerCertificateConfig //Optional TLS configuration
-	RateLimit          *RateLimitConfig         //Optional rate limiting config
-	MiddlewareHandlers []MiddlewareHandler      //Optional middleware handlers which will be run on every request
-	Metrics            bool                     //Optional. If true a prometheus metrics endpoint will be exposed at /metrics/
+	ListenAddress      string                   // Address in the format [host/ip]:port. Mandatory
+	LogLevel           string                   // INFO,FATAL,ERROR,WARN, DEBUG, TRACE
+	Cors               *CorsConfig              // Optional cors config
+	ReadinessCheck     bool                     // Set to true to add a readiness handler at /readiness.
+	Handlers           []Handler                // Array of handlers
+	CertConfig         *ServerCertificateConfig // Optional TLS configuration
+	RateLimit          *RateLimitConfig         // Optional rate limiting config
+	MiddlewareHandlers []MiddlewareHandler      // Optional middleware handlers which will be run on every request
+	Metrics            bool                     // Optional. If true a prometheus metrics endpoint will be exposed at /metrics/
 }
 
-//Handler will hold all the callback handlers to be registered. N.B. gin will be used.
+// Handler will hold all the callback handlers to be registered. N.B. gin will be used.
 type Handler struct {
-	Method  string               //HTTP method or service.AnyMethod to support all limits.
-	Path    string               //The path the endpoint runs on.
-	Group   string               //Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
-	Handler func(c *gin.Context) //The handler to be used.
+	Method  string               // HTTP method or service.AnyMethod to support all limits.
+	Path    string               // The path the endpoint runs on.
+	Group   string               // Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
+	Handler func(c *gin.Context) // The handler to be used.
 }
 
-//MiddlewareHandler will hold all the middleware and whether
+// MiddlewareHandler will hold all the middleware and whether
 type MiddlewareHandler struct {
-	Groups  []string             //Optional - what group should this middleware run on. Empty means the default route.
-	Handler func(c *gin.Context) //The handler to be used.
+	Groups  []string             // Optional - what group should this middleware run on. Empty means the default route.
+	Handler func(c *gin.Context) // The handler to be used.
 }
 
-//ServerCertificateConfig holds detail of the certificate config to be used
+// ServerCertificateConfig holds detail of the certificate config to be used
 type ServerCertificateConfig struct {
-	CertificateFile string //The TLS certificate file.
-	KeyFile         string //The TLS private key file.
+	CertificateFile string // The TLS certificate file.
+	KeyFile         string // The TLS private key file.
 }
 
-//RateLimitConfig specifies the rate limiting config
+// RateLimitConfig specifies the rate limiting config
 type RateLimitConfig struct {
-	Groups []string //Optional - which group(s) should the rate limiting run on. Empty means the default route.
-	Limit  int      //The number of requests allowed within the timeframe.
-	Within int      //The timeframe(seconds) the requests are allowed in.
+	Groups []string // Optional - which group(s) should the rate limiting run on. Empty means the default route.
+	Limit  int      // The number of requests allowed within the timeframe.
+	Within int      // The timeframe(seconds) the requests are allowed in.
 }
 
-//CorsConfig specifies the CORS related config
+// CorsConfig specifies the CORS related config
 type CorsConfig struct {
-	Groups      []string     //Optional - which group(s) should the CORS config run on. Empty means the default route.
-	Enabled     bool         //Whether CORS is enabled or not.
-	OverrideCfg *cors.Config //Optional. This is only required if you do not want to use the default CORS configuration.
+	Groups      []string     // Optional - which group(s) should the CORS config run on. Empty means the default route.
+	Enabled     bool         // Whether CORS is enabled or not.
+	OverrideCfg *cors.Config // Optional. This is only required if you do not want to use the default CORS configuration.
 }
 
-//Service will be the actual structure returned.
+// Service will be the actual structure returned.
 type Service struct {
-	*http.Server         //Anonymous embedded struct to allow access to http server methods.
-	config       *Config //The config.
+	*http.Server         // Anonymous embedded struct to allow access to http server methods.
+	config       *Config // The config.
 }
 
 var routerMap = make(map[string]*gin.RouterGroup)
 
-// Defining the readiness handler for potential use by k8s
+// Defining the readiness handler for potential use by k8s.
 func readinessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -91,7 +91,7 @@ func readinessHandler() gin.HandlerFunc {
 	}
 }
 
-//Optional rate limiting handler
+// Optional rate limiting handler
 func rateLimitHandler(limit int, within int) gin.HandlerFunc {
 	return throttle.Policy(&throttle.Quota{
 		Limit:  uint64(limit),
@@ -152,7 +152,7 @@ func setupRateLimiting(config *RateLimitConfig, engine *gin.Engine) {
 }
 
 func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
-	//Add middleware first then the handlers
+	// Add middleware first then the handlers
 	for _, handler := range mwHandlers {
 		if len(handler.Groups) == 0 {
 			engine.RouterGroup.Use(handler.Handler)
@@ -186,9 +186,9 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	return nil
 }
 
-//NewService will setup a new service based on the config and return this service.
+// NewService will setup a new service based on the config and return this service.
 func NewService(cfg *Config) (*Service, error) {
-	//Router map only required in the context of this function
+	// Router map only required in the context of this function
 	if len(cfg.Handlers) == 0 {
 		return nil, fmt.Errorf("no handlers registered for service")
 	}
@@ -202,11 +202,11 @@ func NewService(cfg *Config) (*Service, error) {
 	logger := log.CreateLogger(cfg.LogLevel)
 	router.Use(ginlogrus.Logger(logger))
 
-	//Set CORS to the default if it's enabled and no override passed in.
+	// Set CORS to the default if it's enabled and no override passed in.
 	setupCors(router, cfg.Cors)
 
 	if cfg.ReadinessCheck {
-		//The readiness handler shouldn't need any middleware to run on it.
+		// The readiness handler shouldn't need any middleware to run on it.
 		routerGroup := router.Group("/")
 		routerGroup.GET(ReadinessEndpoint, readinessHandler())
 	}
@@ -218,7 +218,6 @@ func NewService(cfg *Config) (*Service, error) {
 	setupRateLimiting(cfg.RateLimit, router)
 	setupMiddleware(cfg.MiddlewareHandlers, router)
 	err := setupEndpoints(cfg.Handlers, router)
-
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +245,7 @@ func (s *Service) waitForShutdown() error {
 	return nil
 }
 
-//Run will run the service in the foreground and exit when the server exits
+// Run will run the service in the foreground and exit when the server exits
 func (s *Service) Run() error {
 	log.SetLogLevel(s.config.LogLevel)
 
@@ -262,7 +261,7 @@ func (s *Service) Run() error {
 		}
 	}()
 
-	//We want a graceful exit
+	// We want a graceful exit
 	if err := s.waitForShutdown(); err != nil {
 		return err
 	}
