@@ -19,11 +19,12 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 	// Get the type from the pointer or the struct itself - N.B. It will be a struct when called recursively.
 	var t reflect.Type
 	cfgType := reflect.TypeOf(cfg).Kind()
-	if cfgType == reflect.Ptr {
+	switch cfgType {
+	case reflect.Ptr:
 		t = reflect.TypeOf(cfg).Elem()
-	} else if cfgType == reflect.Struct {
+	case reflect.Struct:
 		t = reflect.TypeOf(cfg)
-	} else {
+	default:
 		return fmt.Errorf("config type must be either a pointer to a struct or a struct")
 	}
 
