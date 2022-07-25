@@ -70,6 +70,7 @@ func writeOutputFile(inputFile string, subst Substitution, outputFile string) er
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
 
@@ -91,6 +92,7 @@ func generateCerts(filepath string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
 

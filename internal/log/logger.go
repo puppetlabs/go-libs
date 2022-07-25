@@ -49,5 +49,6 @@ func CreateLogger(logLevel string) *logrus.Logger {
 	} else {
 		logger.Level = level
 	}
+
 	return logger
 }

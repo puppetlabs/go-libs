@@ -139,6 +139,7 @@ func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
 
 	newGroup := engine.Group("/")
 	routerMap[handlerGroup] = newGroup
+
 	return newGroup
 }
 
@@ -187,6 +188,7 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 			logrus.Warnf("HTTP method %s unsupported.", method)
 		}
 	}
+
 	return nil
 }
 
@@ -246,6 +248,7 @@ func (s *Service) waitForShutdown() error {
 			return fmt.Errorf("%w", err)
 		}
 	}
+
 	return nil
 }
 

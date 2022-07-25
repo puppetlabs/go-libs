@@ -49,6 +49,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 			if err != nil {
 				return err
 			}
+
 			continue
 		}
 
@@ -81,6 +82,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -94,6 +96,7 @@ func LoadViperConfig(cfg interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return fmt.Errorf("%w", v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
 	}))
@@ -117,6 +120,7 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 			flatMap[k] = v
 		}
 	}
+
 	return flatMap, nil
 }
 
@@ -140,6 +144,7 @@ func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 	if fileCloseErr != nil {
 		return fmt.Errorf("%w", fileCloseErr)
 	}
+
 	return err
 }
 

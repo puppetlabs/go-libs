@@ -41,12 +41,14 @@ func (h *HostNames) String() string {
 	for _, host := range *h {
 		output = fmt.Sprintf("%s %s", output, host)
 	}
+
 	return output
 }
 
 // Set will add the hostname to the hostname array.
 func (h *HostNames) Set(value string) error {
 	*h = append(*h, value)
+
 	return nil
 }
 

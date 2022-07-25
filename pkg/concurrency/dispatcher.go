@@ -113,6 +113,7 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	case <-timeout:
 		return errTimedOutWaitingToSubmitTask
 	}
+
 	return nil
 }
 

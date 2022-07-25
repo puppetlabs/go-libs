@@ -18,5 +18,6 @@ func FileCopy(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
