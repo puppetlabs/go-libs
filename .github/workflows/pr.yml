@@ -11,9 +11,6 @@ jobs:
       - name: Run tests
         run: |
           make test
-      - name: Run sec
-        run: |
-          make sec
       - name: Run lint
         run: |
           make lint
