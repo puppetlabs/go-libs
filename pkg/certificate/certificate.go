@@ -55,7 +55,7 @@ func GenerateCA() (*KeyPair, error) {
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, fmt.Errorf("can't create private key because: %s", err)
+		return nil, fmt.Errorf("can't create private key because: %w", err)
 	}
 
 	marshalPublicKey, err := x509.MarshalPKIXPublicKey(privateKey.Public())
@@ -92,8 +92,8 @@ func GenerateCA() (*KeyPair, error) {
 	return &keyPair, nil
 }
 
-// GenerateSignedCert will generate a new signed certificate signed by the input CA key/cert pair with one of multiple hostnames
-// and with the given CN.
+// GenerateSignedCert will generate a new signed certificate signed by the input CA key/cert pair with one of multiple
+// hostnames and with the given CN.
 func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*KeyPair, error) {
 	if ca == nil {
 		return nil, fmt.Errorf("nil pointer for root CA key pair")
@@ -160,7 +160,8 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 		template.Subject.CommonName = commonName
 	}
 
-	certificate, err := x509.CreateCertificate(rand.Reader, template, caCert, &privateKey.PublicKey, tlsKeyPair.PrivateKey)
+	certificate, err := x509.CreateCertificate(rand.Reader, template, caCert, &privateKey.PublicKey,
+		tlsKeyPair.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("can't create certificate because: %s", err)
 	}

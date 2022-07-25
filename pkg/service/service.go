@@ -34,14 +34,14 @@ type Config struct {
 	CertConfig         *ServerCertificateConfig // Optional TLS configuration
 	RateLimit          *RateLimitConfig         // Optional rate limiting config
 	MiddlewareHandlers []MiddlewareHandler      // Optional middleware handlers which will be run on every request
-	Metrics            bool                     // Optional. If true a prometheus metrics endpoint will be exposed at /metrics/
+	Metrics            bool                     // Optional. If true, exposes a Prometheus metrics endpoint at /metrics/
 }
 
 // Handler will hold all the callback handlers to be registered. N.B. gin will be used.
 type Handler struct {
 	Method  string               // HTTP method or service.AnyMethod to support all limits.
 	Path    string               // The path the endpoint runs on.
-	Group   string               // Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
+	Group   string               // Optional - specify a group (used to control which middlewares will run)
 	Handler func(c *gin.Context) // The handler to be used.
 }
 
@@ -68,7 +68,7 @@ type RateLimitConfig struct {
 type CorsConfig struct {
 	Groups      []string     // Optional - which group(s) should the CORS config run on. Empty means the default route.
 	Enabled     bool         // Whether CORS is enabled or not.
-	OverrideCfg *cors.Config // Optional. This is only required if you do not want to use the default CORS configuration.
+	OverrideCfg *cors.Config // Optional. Only required if you do not want to use the default CORS configuration.
 }
 
 // Service will be the actual structure returned.
@@ -248,7 +248,8 @@ func (s *Service) Run() error {
 
 	go func() {
 		if s.config.CertConfig != nil {
-			if err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile); err != http.ErrServerClosed {
+			err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile)
+			if err != http.ErrServerClosed {
 				logrus.Fatalf("Failed to start query service: %s\n", err)
 			}
 		} else {

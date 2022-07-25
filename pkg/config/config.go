@@ -53,8 +53,10 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 
 		var fileDefaultSet bool
 		if fileTag, ok := f.Tag.Lookup("file"); ok {
-			// It is not mandatory to have a default set so we will log this and move on.
-			fileBytes, err := ioutil.ReadFile(fileTag) //#nosec The security linter will pick this up. It is build time injection so it is assumed this will be tested first.
+			// It is not mandatory to have a default set, so we will log this and move on.
+
+			//#nosec gosec picks this up. It is build time injection, so it is assumed this will be tested first.
+			fileBytes, err := ioutil.ReadFile(fileTag)
 			if err != nil {
 				logrus.Warnf("Unable to read file %s due to error %s.", fileTag, err)
 			}
@@ -72,7 +74,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 	return nil
 }
 
-// LoadViperConfig will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
+// LoadViperConfig populates the cfg structure passed in (it must be the address passed in).
 func LoadViperConfig(cfg interface{}) error {
 	if reflect.TypeOf(cfg).Kind() != reflect.Ptr {
 		return fmt.Errorf("reading viper config requires a pointer argument")
@@ -108,9 +110,9 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 	return flatMap, nil
 }
 
-// LoadViperConfigFromFile will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
-// The config will be read from a file but environment variables override and default values can still be set. The file can
-// be anything that Viper supports. N.B. This only supports anonymous nested structs.
+// LoadViperConfigFromFile populates the cfg structure passed in (it must be the address passed in).
+// The config will be read from a file but environment variables override and default values can still be set.
+// The file can be anything that Viper supports. N.B. This only supports anonymous nested structs.
 func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 	if len(filepath.Ext(filename)) < 1 {
 		return fmt.Errorf("missing file extension")
@@ -131,9 +133,9 @@ func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 	return err
 }
 
-// LoadViperConfigFromReader will populate the cfg structure passed in (it must be the address passed in) returning an error upon error.
-// The config will be read from a reader which must be setup prior to the call. N.B. The cfgType can be anything supported by viper
-// i.e. yaml, json, env, ini, toml.
+// LoadViperConfigFromReader will populate the cfg structure passed in (it must be the address passed in).
+// The config will be read from a reader which must be setup prior to the call.
+// N.B. The cfgType can be anything supported by viper i.e. yaml, json, env, ini, toml.
 func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) error {
 	v := viper.New()
 	v.SetConfigType(cfgType)
@@ -142,9 +144,9 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return err
 	}
 
-	// Reading in config from a source with multiple levels(usually a config file) will produce a multi dimensional map whereas
-	// reading from a struct produces a flattened map. Flattening the map from the reader and merging with the already flattened
-	// struct map aligns this.
+	// Reading in config from a source with multiple levels (usually a config file) will produce a multi-dimensional map
+	// whereas reading from a struct produces a flattened map. Flattening the map from the reader and merging with the
+	// already flattened struct map aligns this.
 	flatCfgMap, err := flattenCfgMap(v.AllSettings())
 	if err != nil {
 		return err
