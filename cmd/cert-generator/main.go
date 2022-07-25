@@ -61,29 +61,28 @@ func main() {
 	}
 
 	if generateCAFiles != nil && *generateCAFiles {
-		err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "ca.crt")), CAKeyPair.Certificate, 0600)
+		err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "ca.crt")), CAKeyPair.Certificate, 0o600)
 		if err != nil {
 			fmt.Printf("Failed to write CA certificate file to disk :%s", err)
 			os.Exit(3)
 		}
 
-		err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "ca.key")), CAKeyPair.PrivateKey, 0600)
+		err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "ca.key")), CAKeyPair.PrivateKey, 0o600)
 		if err != nil {
 			fmt.Printf("Failed to write CA key file to disk: %s.", err)
 			os.Exit(3)
 		}
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "tls.crt")), certKeyPair.Certificate, 0600)
+	err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "tls.crt")), certKeyPair.Certificate, 0o600)
 	if err != nil {
 		fmt.Printf("Failed to write TLS cert file to disk: %s.", err)
 		os.Exit(3)
 	}
 
-	err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "tls.key")), certKeyPair.PrivateKey, 0600)
+	err = ioutil.WriteFile(fmt.Sprintf(filepath.Join(filepath.Clean(*directory), "tls.key")), certKeyPair.PrivateKey, 0o600)
 	if err != nil {
 		fmt.Printf("Failed to write TLS key file to disk: %s.", err)
 		os.Exit(3)
 	}
-
 }

@@ -9,11 +9,10 @@ import (
 	"testing"
 
 	"github.com/gin-contrib/cors"
-
 	"github.com/gin-gonic/gin"
 )
 
-//N.B. The rate limiting library does not play nicely with httptest hence rate limiting is not tested.
+// N.B. The rate limiting library does not play nicely with httptest hence rate limiting is not tested.
 var (
 	testEndpoint      = "/helloworld"
 	readinessEndpoint = "/readiness"
@@ -56,7 +55,6 @@ func sendRequest(svc *Service, method string, url string, reqHeaders ...headers)
 }
 
 func checkResponseCode(method string, url string, cfg Config, code int, reqHeaders ...headers) (*httptest.ResponseRecorder, error) {
-
 	svc, err := setupService(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create service config %s", err)
@@ -74,7 +72,6 @@ func checkResponseCode(method string, url string, cfg Config, code int, reqHeade
 }
 
 func checkMultipleResponseCodes(methods []string, url string, cfg Config, code int, reqHeaders ...headers) ([]*httptest.ResponseRecorder, error) {
-
 	svc, err := setupService(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create service config %s", err)
@@ -97,17 +94,17 @@ func checkMultipleResponseCodes(methods []string, url string, cfg Config, code i
 	return responses, nil
 }
 
-//helloWorldHandler is a placeholder
+// helloWorldHandler is a placeholder
 func helloWorldHandler() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.String(http.StatusOK, "Hello World.")
 	}
 }
 
-//returnWithResponseCode returns the code that is passed in
+// returnWithResponseCode returns the code that is passed in
 func returnWithResponseCode(httpStatus int) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		//Return what would be returned if access is denied.
+		// Return what would be returned if access is denied.
 		c.AbortWithStatus(httpStatus)
 	}
 }
@@ -208,15 +205,18 @@ func TestRegisteredHandlerReturnsCorrectResponse(t *testing.T) {
 		t.Errorf("handler returned unexpected body: got <%v> want <%v>",
 			rr.Body.String(), expected)
 	}
-
 }
 
 func TestMultipleGroupsMiddleware(t *testing.T) {
-	mwHandlers := []MiddlewareHandler{{Groups: []string{"returnAccepted"}, Handler: returnWithResponseCode(http.StatusAccepted)},
-		{Groups: []string{"returnAlreadyReported"}, Handler: returnWithResponseCode(http.StatusAlreadyReported)}}
+	mwHandlers := []MiddlewareHandler{
+		{Groups: []string{"returnAccepted"}, Handler: returnWithResponseCode(http.StatusAccepted)},
+		{Groups: []string{"returnAlreadyReported"}, Handler: returnWithResponseCode(http.StatusAlreadyReported)},
+	}
 
-	handlers := []Handler{{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/accept", Group: "returnAccepted"},
-		{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/reported", Group: "returnAlreadyReported"}}
+	handlers := []Handler{
+		{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/accept", Group: "returnAccepted"},
+		{Method: AnyMethod, Handler: helloWorldHandler(), Path: "/reported", Group: "returnAlreadyReported"},
+	}
 
 	cfg := Config{
 		ListenAddress:      ":8888",
@@ -251,8 +251,10 @@ func TestMultipleGroupsMiddleware(t *testing.T) {
 func TestMultipleGroupsCors(t *testing.T) {
 	cfg := Config{
 		ListenAddress: ":8888",
-		Handlers: []Handler{{Group: "alloworigin", Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
-			{Group: "nocors", Method: http.MethodGet, Handler: helloWorldHandler(), Path: "/nocors"}},
+		Handlers: []Handler{
+			{Group: "alloworigin", Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint},
+			{Group: "nocors", Method: http.MethodGet, Handler: helloWorldHandler(), Path: "/nocors"},
+		},
 		Cors: &CorsConfig{Groups: []string{"alloworigin"}, Enabled: true, OverrideCfg: &cors.Config{AllowOrigins: []string{allowedOrigin}}},
 	}
 
@@ -279,7 +281,6 @@ func TestMultipleGroupsCors(t *testing.T) {
 	if allowedRr.Code != http.StatusOK {
 		t.Errorf("Expected status %d but got %d.", http.StatusForbidden, allowedRr.Code)
 	}
-
 }
 
 func TestReadinessHandler(t *testing.T) {

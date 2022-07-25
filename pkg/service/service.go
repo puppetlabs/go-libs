@@ -8,16 +8,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"github.com/cnjack/throttle"
-
-	"github.com/puppetlabs/go-libs/internal/log"
-	ginlogrus "github.com/toorop/gin-logrus"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/puppetlabs/go-libs/internal/log"
 	"github.com/sirupsen/logrus"
+	ginlogrus "github.com/toorop/gin-logrus"
 )
 
 const (

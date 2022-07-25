@@ -19,64 +19,64 @@ webserver:
   apiReadTimeout: 120s
   apiWriteTimeout: 120s`)
 
-//StructNoTags holds one field with no tags against the struct
+// StructNoTags holds one field with no tags against the struct
 type StructNoTags struct {
 	DummyString string
 }
 
-//StructMissingEnvTag holds one field with no env tag
+// StructMissingEnvTag holds one field with no env tag
 type StructMissingEnvTag struct {
 	TestVal string `default:"xyz"`
 }
 
-//StructMissingDefaultTags holds one field with no default tag
+// StructMissingDefaultTags holds one field with no default tag
 type StructMissingDefaultTags struct {
 	TestString string `env:"TEST_STRING"`
 	TestInt    int    `env:"TEST_INT"`
 	TestBool   bool   `env:"TEST_BOOL"`
 }
 
-//StructEmptyDefaultTag holds one field with no default tag
+// StructEmptyDefaultTag holds one field with no default tag
 type StructEmptyDefaultTag struct {
 	TestVal string `env:"TEST_VAL" default:""`
 }
 
-//StructAllTagged holds multiple fields with tags.
+// StructAllTagged holds multiple fields with tags.
 type StructAllTagged struct {
 	TestVal  string `env:"TEST_VAL" default:"xyz"`
 	TestVal2 string `env:"TEST_VAL2" default:"abc"`
 	TestInt  int    `env:"TEST_INT" default:"2"`
 }
 
-//InnerStructError is the nested struct
+// InnerStructError is the nested struct
 type InnerStructError struct {
 	TestNestInner string `default:"inner"`
 }
 
-//OuterStructInnerError is the nested struct
+// OuterStructInnerError is the nested struct
 type OuterStructInnerError struct {
 	TestNestOuter string `env:"TEST_NEST_OUTER" default:"outer"`
 	InnerStructError
 }
 
-//InnerStruct is the nested struct
+// InnerStruct is the nested struct
 type InnerStruct struct {
 	TestNestInner string `env:"TEST_NEST_INNER" default:"inner"`
 	InnerMostStruct
 }
 
-//InnerMostStruct is the nested struct
+// InnerMostStruct is the nested struct
 type InnerMostStruct struct {
 	TestNestInnerMost string `env:"TEST_NEST_INNER_MOST" default:"innermost"`
 }
 
-//OuterStruct is the struct containing the nested struct
+// OuterStruct is the struct containing the nested struct
 type OuterStruct struct {
 	TestNestOuter string `env:"TEST_NEST_OUTER" default:"outer"`
 	InnerStruct
 }
 
-//Database contains the postgres config.
+// Database contains the postgres config.
 type Database struct {
 	DBName   string `env:"UT_DB_NAME" default:"nottest"`
 	Host     string `env:"UT_DB_HOST" default:"xyz"`
@@ -86,13 +86,13 @@ type Database struct {
 	User     string `env:"UT_DB_USER" default:"abc"`
 }
 
-//WebServer contains webserver configuration.
+// WebServer contains webserver configuration.
 type WebServer struct {
 	APIReadTimeout  time.Duration `env:"UT_WS_API_READ_TIMEOUT" default:"60s"`
 	APIWriteTimeout time.Duration `env:"UT_WS_API_WRITE_TIMEOUT" default:"60s"`
 }
 
-//AppConfig The configuration.
+// AppConfig The configuration.
 type AppConfig struct {
 	Database
 	WebServer
@@ -195,10 +195,11 @@ func TestNestedStructWithError(t *testing.T) {
 	}
 }
 
-//The password is default
+// The password is default
 func TestReadYamlConfigWithSomeDefaults(t *testing.T) {
 	os.Clearenv()
-	expected := AppConfig{Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "12345", User: "postgres"},
+	expected := AppConfig{
+		Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "12345", User: "postgres"},
 		WebServer{APIReadTimeout: time.Second * time.Duration(120), APIWriteTimeout: time.Second * time.Duration(120)},
 	}
 	reader := bytes.NewReader(yamlExample)
@@ -214,7 +215,8 @@ func TestReadYamlConfigWithSomeDefaults(t *testing.T) {
 
 func TestReadYamlConfigWithEnvOverride(t *testing.T) {
 	os.Clearenv()
-	expected := AppConfig{Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "environment", User: "postgres"},
+	expected := AppConfig{
+		Database{DBName: "mydb", Host: "abc", Port: 5432, SSLMode: "disable", Password: "environment", User: "postgres"},
 		WebServer{APIReadTimeout: time.Second * time.Duration(120), APIWriteTimeout: time.Second * time.Duration(120)},
 	}
 	var actual AppConfig

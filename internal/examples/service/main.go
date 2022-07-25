@@ -15,7 +15,7 @@ handler, handlers with rate limiting, handler without rate limiting and default 
 To run this perform a go run internal/examples/service/main.go from the top level directory.
 */
 
-//BasicTest is a placeholder
+// BasicTest is a placeholder
 func BasicTest() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
@@ -33,9 +33,11 @@ func middlewareHandler() func(c *gin.Context) {
 }
 
 func main() {
-	handlers := []service.Handler{{Method: http.MethodGet, Path: "/test", Handler: BasicTest()},
+	handlers := []service.Handler{
+		{Method: http.MethodGet, Path: "/test", Handler: BasicTest()},
 		{Method: http.MethodGet, Path: "/handler", Handler: gin.WrapF(handler)},
-		{Method: http.MethodGet, Path: "/testRateLimit", Handler: BasicTest(), Group: "ratelimited"}}
+		{Method: http.MethodGet, Path: "/testRateLimit", Handler: BasicTest(), Group: "ratelimited"},
+	}
 
 	mwHandlers := []service.MiddlewareHandler{{Handler: middlewareHandler()}}
 
@@ -44,12 +46,15 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	certConfig := &service.ServerCertificateConfig{CertificateFile: fmt.Sprintf("%s/server.crt", wd),
-		KeyFile: fmt.Sprintf("%s/server.key", wd)}
+	certConfig := &service.ServerCertificateConfig{
+		CertificateFile: fmt.Sprintf("%s/server.crt", wd),
+		KeyFile:         fmt.Sprintf("%s/server.key", wd),
+	}
 
 	rateLimitConfig := &service.RateLimitConfig{Groups: []string{"ratelimited"}, Limit: 1, Within: 1}
 
-	cfg := &service.Config{ListenAddress: ":8888",
+	cfg := &service.Config{
+		ListenAddress:      ":8888",
 		Cors:               &service.CorsConfig{Enabled: true},
 		Handlers:           handlers,
 		CertConfig:         certConfig,
