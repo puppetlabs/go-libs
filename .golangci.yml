@@ -16,16 +16,6 @@ linters:
     - varnamelen          # complains about short variable names even if they are appropriate
     - wsl                 # overly opinionated about whitespacing style
 
-#linters-settings:
-#  cyclop:
-#    max-complexity: 16
-#  gocyclo:
-#    min-complexity: 16
-#  lll:
-#    line-length: 200
-#  nlreturn:
-#    block-size: 2
-
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
