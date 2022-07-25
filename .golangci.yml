@@ -5,8 +5,7 @@ linters:
   enable-all: true
   disable:
     - exhaustivestruct    # deprecated
-    - exhaustruct         # overly cautious
-    - goimports           # clashes with gci
+    - exhaustruct         # too cautious
     - golint              # deprecated
     - ifshort             # enforces an unintuitive coding style
     - interfacer          # deprecated
@@ -14,7 +13,11 @@ linters:
     - nonamedreturns      # named returns are required to handle errors from deferred functions
     - scopelint           # deprecated
     - varnamelen          # complains about short variable names even if they are appropriate
-    - wsl                 # overly opinionated about whitespacing style
+    - wsl                 # too aggressive
+
+linters-settings:
+  lll:
+    tab-width: 4
 
 issues:
   exclude-use-default: false
