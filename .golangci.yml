@@ -1,0 +1,30 @@
+run:
+  tests: false
+
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct    # deprecated
+    - exhaustruct         # overly cautious
+    - goimports           # clashes with gci
+    - golint              # deprecated
+    - ifshort             # enforces an unintuitive coding style
+    - interfacer          # deprecated
+    - maligned            # deprecated
+    - nonamedreturns      # named returns are required to handle errors from deferred functions
+    - scopelint           # deprecated
+    - varnamelen          # complains about short variable names even if they are appropriate
+    - wsl                 # overly opinionated about whitespacing style
+
+#linters-settings:
+#  cyclop:
+#    max-complexity: 16
+#  gocyclo:
+#    min-complexity: 16
+#  lll:
+#    line-length: 200
+#  nlreturn:
+#    block-size: 2
+
+issues:
+  exclude-use-default: false
