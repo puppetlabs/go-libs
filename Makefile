@@ -36,8 +36,9 @@ lint: tools
 	@echo "$(OK_COLOR)==> Checking code style with 'golint' tool$(NO_COLOR)"
 	@golint -set_exit_status ./... || exit 1
 
-# run gci and gofumpt to improve formatting of Go files
+# run tools to improve formatting of Go files
 reformat:
+	goimports -l ./
 	gci write ./
 	gofumpt -l -w ./
 
