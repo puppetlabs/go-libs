@@ -16,6 +16,12 @@ import (
 	"time"
 )
 
+const (
+	numberOfBitsForKey        = 2048
+	numberOfHoursInYear       = 8760
+	upperLimitForRandomNumber = 999999999999999999
+)
+
 // KeyPair stores a PEM encoded certificate and
 // a PEM encoded RSA private key.
 type KeyPair struct {
@@ -55,11 +61,12 @@ func (h *HostNames) Set(value string) error {
 // GenerateCA will generate a new CA key/cert pair.
 func GenerateCA() (*KeyPair, error) {
 	// choose a random number between 0 and 999999999999999999
-	randomNum, _ := rand.Int(rand.Reader, big.NewInt(999999999999999999))
+	randomNum, _ := rand.Int(rand.Reader, big.NewInt(int64(upperLimitForRandomNumber)))
 	// multiply by 100 to get it up to 20 digits. hard coding it overflows int64
-	serialNum := randomNum.Mul(randomNum, big.NewInt(100))
+	multiplier := 100
+	serialNum := randomNum.Mul(randomNum, big.NewInt(int64(multiplier)))
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := rsa.GenerateKey(rand.Reader, numberOfBitsForKey)
 	if err != nil {
 		return nil, fmt.Errorf("can't create private key because: %w", err)
 	}
@@ -75,7 +82,7 @@ func GenerateCA() (*KeyPair, error) {
 		SerialNumber:          serialNum,
 		Subject:               subject,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Hour * 8760),
+		NotAfter:              time.Now().Add(time.Hour * numberOfHoursInYear),
 		IsCA:                  true,
 		SubjectKeyId:          subjectKeyID[:],
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
@@ -116,11 +123,12 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	}
 
 	// choose a random number between 0 and 999999999999999999
-	randomNum, _ := rand.Int(rand.Reader, big.NewInt(999999999999999999))
+	randomNum, _ := rand.Int(rand.Reader, big.NewInt(upperLimitForRandomNumber))
 	// multiply by 100 to get it up to 20 digits. hard coding it overflows int64
-	serialNum := randomNum.Mul(randomNum, big.NewInt(100))
+	multiplier := 100
+	serialNum := randomNum.Mul(randomNum, big.NewInt(int64(multiplier)))
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := rsa.GenerateKey(rand.Reader, numberOfBitsForKey)
 	if err != nil {
 		return nil, fmt.Errorf("can't create private key because: %w", err)
 	}
@@ -152,7 +160,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 		SerialNumber: serialNum,
 		Subject:      subject,
 		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(time.Hour * 8760),
+		NotAfter:     time.Now().Add(time.Hour * numberOfHoursInYear),
 		SubjectKeyId: subjectKeyID[:],
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,

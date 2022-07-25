@@ -13,6 +13,11 @@ import (
 	"github.com/puppetlabs/go-libs/pkg/util"
 )
 
+const (
+	fileModeUserReadWriteOnly                       = 0o600
+	fileModeUserReadWriteExecuteGroupReadOthersRead = 0o744
+)
+
 var (
 	serviceDir            string
 	name                  string
@@ -66,7 +71,7 @@ func writeOutputFile(inputFile string, subst Substitution, outputFile string) er
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), 0o600)
+	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -84,11 +89,11 @@ func generateCerts(filepath string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate, 0o600)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate, fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey, 0o600)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey, fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -112,9 +117,9 @@ func main() {
 	var tlsCertFile string
 	var tlsKeyFile string
 
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "cmd", name), 0o744))
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "config"), 0o744))
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"), 0o744))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "cmd", name), fileModeUserReadWriteExecuteGroupReadOthersRead))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "config"), fileModeUserReadWriteExecuteGroupReadOthersRead))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"), fileModeUserReadWriteExecuteGroupReadOthersRead))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "handlers.go"),
 		filepath.Join(serviceDir, "pkg", "handlers", "handlers.go")))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "config_test.go.tmpl"),

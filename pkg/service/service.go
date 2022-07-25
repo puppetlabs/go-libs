@@ -82,6 +82,7 @@ type Service struct {
 var (
 	errNoHandlersRegisteredForService = errors.New("no handlers registered for service")
 	errInvalidListenAddress           = errors.New("invalid listen address")
+	errRecoveredFromPanic             = errors.New("recovered from panic")
 )
 
 var routerMap = make(map[string]*gin.RouterGroup)
@@ -173,7 +174,7 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("error caught: %w", r.(error))
+			err = fmt.Errorf("%w, error caught: %v", errRecoveredFromPanic, r)
 		}
 	}()
 
@@ -241,7 +242,8 @@ func (s *Service) waitForShutdown() error {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	timeoutSeconds := 5
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 	if s.Server != nil {
 		if err := s.Shutdown(ctx); err != nil {

@@ -12,6 +12,11 @@ import (
 
 var hostnames certificate.HostNames
 
+const (
+	errorExitCode             = 1
+	fileModeUserReadWriteOnly = 0o600
+)
+
 func main() {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -33,20 +38,20 @@ func main() {
 		certBytes, err := ioutil.ReadFile(*caCert)
 		if err != nil {
 			fmt.Printf("Failed to read CA certificate file %s", err)
-			os.Exit(1)
+			os.Exit(errorExitCode)
 		}
 
 		keyBytes, err := ioutil.ReadFile(*caKey)
 		if err != nil {
 			fmt.Printf("Failed to read CA private key file %s", err)
-			os.Exit(1)
+			os.Exit(errorExitCode)
 		}
 		CAKeyPair = &certificate.KeyPair{Certificate: certBytes, PrivateKey: keyBytes}
 	} else {
 		CAKeyPair, err = certificate.GenerateCA()
 		if err != nil {
 			fmt.Printf("Failed to generate CA cerificate :%s", err)
-			os.Exit(1)
+			os.Exit(errorExitCode)
 		}
 	}
 
@@ -57,36 +62,36 @@ func main() {
 	certKeyPair, err := certificate.GenerateSignedCert(CAKeyPair, hostnames, *commonName)
 	if err != nil {
 		fmt.Printf("Failed to generate TLS cerificate :%s", err)
-		os.Exit(3)
+		os.Exit(errorExitCode)
 	}
 
 	if generateCAFiles != nil && *generateCAFiles {
 		err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.crt")), CAKeyPair.Certificate,
-			0o600)
+			fileModeUserReadWriteOnly)
 		if err != nil {
 			fmt.Printf("Failed to write CA certificate file to disk :%s", err)
-			os.Exit(3)
+			os.Exit(errorExitCode)
 		}
 
 		err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.key")), CAKeyPair.PrivateKey,
-			0o600)
+			fileModeUserReadWriteOnly)
 		if err != nil {
 			fmt.Printf("Failed to write CA key file to disk: %s.", err)
-			os.Exit(3)
+			os.Exit(errorExitCode)
 		}
 	}
 
 	err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.crt")), certKeyPair.Certificate,
-		0o600)
+		fileModeUserReadWriteOnly)
 	if err != nil {
 		fmt.Printf("Failed to write TLS cert file to disk: %s.", err)
-		os.Exit(3)
+		os.Exit(errorExitCode)
 	}
 
 	err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.key")), certKeyPair.PrivateKey,
-		0o600)
+		fileModeUserReadWriteOnly)
 	if err != nil {
 		fmt.Printf("Failed to write TLS key file to disk: %s.", err)
-		os.Exit(3)
+		os.Exit(errorExitCode)
 	}
 }
