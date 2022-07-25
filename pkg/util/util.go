@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 )
@@ -9,12 +10,12 @@ import (
 func FileCopy(src, dst string) error {
 	input, err := ioutil.ReadFile(filepath.Clean(src))
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	err = ioutil.WriteFile(dst, input, 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }

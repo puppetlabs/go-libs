@@ -84,9 +84,9 @@ func LoadViperConfig(cfg interface{}) error {
 	if err != nil {
 		return err
 	}
-	return v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
+	return fmt.Errorf("%w", v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
-	})
+	}))
 }
 
 // flattenCfgMap will take a map of any depth and flatten it down so there is only one level. N.B. The key will
@@ -101,7 +101,7 @@ func flattenCfgMap(cfgMap map[string]interface{}) (map[string]interface{}, error
 			}
 			err = mergo.Merge(&flatMap, flatInnerMap)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%w", err)
 			}
 		} else {
 			flatMap[k] = v
@@ -120,7 +120,7 @@ func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 
 	reader, err := os.Open(filepath.Clean(filename))
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	err = LoadViperConfigFromReader(reader, cfg, filepath.Ext(filename)[1:])
@@ -128,7 +128,7 @@ func LoadViperConfigFromFile(filename string, cfg interface{}) error {
 	// N.B. Deferring a file close is bad practise so making it key part of function.
 	fileCloseErr := reader.Close()
 	if fileCloseErr != nil {
-		return fileCloseErr
+		return fmt.Errorf("%w", fileCloseErr)
 	}
 	return err
 }
@@ -141,7 +141,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 	v.SetConfigType(cfgType)
 	err := v.ReadConfig(in)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	// Reading in config from a source with multiple levels (usually a config file) will produce a multi-dimensional map
@@ -153,7 +153,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 	}
 	err = v.MergeConfigMap(flatCfgMap)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	err = setupViperConfig(cfg, v)
@@ -161,7 +161,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return err
 	}
 
-	return v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
+	return fmt.Errorf("%w", v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
-	})
+	}))
 }

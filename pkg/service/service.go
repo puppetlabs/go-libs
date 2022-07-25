@@ -236,7 +236,7 @@ func (s *Service) waitForShutdown() error {
 	defer cancel()
 	if s.Server != nil {
 		if err := s.Shutdown(ctx); err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 	}
 	return nil

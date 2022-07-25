@@ -59,16 +59,16 @@ func checkError(err error) {
 func writeOutputFile(inputFile string, subst Substitution, outputFile string) error {
 	tmpl, err := template.ParseFiles(inputFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	var tmplOutput bytes.Buffer
 	err = tmpl.Execute(&tmplOutput, subst)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
@@ -81,15 +81,15 @@ func generateCerts(filepath string) error {
 
 	certKeyPair, err := certificate.GenerateSignedCert(CAKeypair, []string{"localhost"}, "localhost")
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate, 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey, 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
