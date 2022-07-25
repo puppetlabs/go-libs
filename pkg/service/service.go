@@ -23,7 +23,7 @@ import (
 const (
 	// AnyMethod should be passed when a handler wants to support any HTTP method.
 	AnyMethod = "Any"
-	// ReadinessEndpoint is the default URL for a readiness endpoint
+	// ReadinessEndpoint is the default URL for a readiness endpoint.
 	ReadinessEndpoint = "/readiness"
 )
 
@@ -48,26 +48,26 @@ type Handler struct {
 	Handler func(c *gin.Context) // The handler to be used.
 }
 
-// MiddlewareHandler will hold all the middleware and whether
+// MiddlewareHandler will hold a middleware handler and the groups on which it should be registered.
 type MiddlewareHandler struct {
 	Groups  []string             // Optional - what group should this middleware run on. Empty means the default route.
 	Handler func(c *gin.Context) // The handler to be used.
 }
 
-// ServerCertificateConfig holds detail of the certificate config to be used
+// ServerCertificateConfig holds detail of the certificate config to be used.
 type ServerCertificateConfig struct {
 	CertificateFile string // The TLS certificate file.
 	KeyFile         string // The TLS private key file.
 }
 
-// RateLimitConfig specifies the rate limiting config
+// RateLimitConfig specifies the rate limiting config.
 type RateLimitConfig struct {
 	Groups []string // Optional - which group(s) should the rate limiting run on. Empty means the default route.
 	Limit  int      // The number of requests allowed within the timeframe.
 	Within int      // The timeframe(seconds) the requests are allowed in.
 }
 
-// CorsConfig specifies the CORS related config
+// CorsConfig specifies the CORS related config.
 type CorsConfig struct {
 	Groups      []string     // Optional - which group(s) should the CORS config run on. Empty means the default route.
 	Enabled     bool         // Whether CORS is enabled or not.
@@ -91,7 +91,7 @@ func readinessHandler() gin.HandlerFunc {
 	}
 }
 
-// Optional rate limiting handler
+// Optional rate limiting handler.
 func rateLimitHandler(limit int, within int) gin.HandlerFunc {
 	return throttle.Policy(&throttle.Quota{
 		Limit:  uint64(limit),
@@ -245,7 +245,7 @@ func (s *Service) waitForShutdown() error {
 	return nil
 }
 
-// Run will run the service in the foreground and exit when the server exits
+// Run will run the service in the foreground and exit when the server exits.
 func (s *Service) Run() error {
 	log.SetLogLevel(s.config.LogLevel)
 
