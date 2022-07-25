@@ -40,7 +40,6 @@ func BuildURL(input string, defaultScheme string, defaultPort int) (string, erro
 		}
 		scheme = defaultScheme
 		result = input
-
 	}
 
 	// Remove path
