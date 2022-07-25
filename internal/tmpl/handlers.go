@@ -1,3 +1,4 @@
+// Package handlers contains request handlers.
 package handlers
 
 import (

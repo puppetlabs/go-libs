@@ -109,7 +109,7 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	select {
 	case queue <- task:
 	case <-timeout:
-		return fmt.Errorf("Timed out waiting to submit task")
+		return fmt.Errorf("timed out waiting to submit task")
 	}
 	return nil
 }

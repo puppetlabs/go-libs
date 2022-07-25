@@ -1,3 +1,4 @@
+// Package url provides facilities for working with URLs.
 package url
 
 import (
@@ -18,7 +19,7 @@ func BuildURL(input string, defaultScheme string, defaultPort int) (string, erro
 	var result string
 
 	if len(input) == 0 {
-		return "", fmt.Errorf("Input cannot be empty")
+		return "", fmt.Errorf("input cannot be empty")
 	}
 
 	// Save the scheme
@@ -29,7 +30,7 @@ func BuildURL(input string, defaultScheme string, defaultPort int) (string, erro
 		result = parts[1]
 	} else {
 		if len(defaultScheme) == 0 {
-			return "", fmt.Errorf("No scheme available")
+			return "", fmt.Errorf("no scheme available")
 		}
 		scheme = defaultScheme
 		result = input

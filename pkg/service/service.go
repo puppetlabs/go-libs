@@ -1,3 +1,4 @@
+// Package service provides service-related facilities.
 package service
 
 import (
@@ -165,7 +166,7 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Error caught: %s", r)
+			err = fmt.Errorf("error caught: %s", r)
 		}
 	}()
 

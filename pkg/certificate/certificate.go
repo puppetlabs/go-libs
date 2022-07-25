@@ -1,3 +1,4 @@
+// Package certificate provides facilities for working with certificates.
 package certificate
 
 import (
