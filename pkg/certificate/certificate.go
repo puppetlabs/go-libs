@@ -14,6 +14,8 @@ import (
 	"math/big"
 	"net"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -142,7 +144,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 					ips = append(ips, net.ParseIP(ip))
 				}
 			} else {
-				fmt.Printf("Could not resolve hostname %s\n", hostname)
+				logrus.Errorf("Could not resolve hostname %s\n", hostname)
 			}
 			dnsNames = append(dnsNames, hostname)
 		}

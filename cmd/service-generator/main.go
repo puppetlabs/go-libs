@@ -121,7 +121,8 @@ func main() {
 
 	checkError(os.MkdirAll(filepath.Join(serviceDir, "cmd", name), fileModeUserReadWriteExecuteGroupReadOthersRead))
 	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "config"), fileModeUserReadWriteExecuteGroupReadOthersRead))
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"), fileModeUserReadWriteExecuteGroupReadOthersRead))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"),
+		fileModeUserReadWriteExecuteGroupReadOthersRead))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "handlers.go"),
 		filepath.Join(serviceDir, "pkg", "handlers", "handlers.go")))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "config_test.go.tmpl"),
