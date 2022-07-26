@@ -128,17 +128,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	var dnsNames []string
 	var ips []net.IP
 	if len(hostnames) > 0 {
-		for _, hostname := range hostnames {
-			ipList, err := net.LookupHost(hostname)
-			if err == nil {
-				for _, ip := range ipList {
-					ips = append(ips, net.ParseIP(ip))
-				}
-			} else {
-				logrus.Errorf("Could not resolve hostname %s\n", hostname)
-			}
-			dnsNames = append(dnsNames, hostname)
-		}
+		dnsNames, ips = populateDNSNamesAndIPs(hostnames, dnsNames, ips)
 	}
 
 	template := &x509.Certificate{
@@ -192,4 +182,20 @@ func getSubject() pkix.Name {
 		Province:           []string{"Oregon"},
 		Locality:           []string{"Portland"},
 	}
+}
+
+func populateDNSNamesAndIPs(hostnames HostNames, dnsNames []string, ips []net.IP) ([]string, []net.IP) {
+	for _, hostname := range hostnames {
+		ipList, err := net.LookupHost(hostname)
+		if err == nil {
+			for _, ip := range ipList {
+				ips = append(ips, net.ParseIP(ip))
+			}
+		} else {
+			logrus.Errorf("Could not resolve hostname %s\n", hostname)
+		}
+		dnsNames = append(dnsNames, hostname)
+	}
+
+	return dnsNames, ips
 }
