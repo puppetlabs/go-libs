@@ -97,9 +97,14 @@ func LoadViperConfig(cfg interface{}) error {
 		return err
 	}
 
-	return fmt.Errorf("%w", v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
+	err = v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
-	}))
+	})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 // flattenCfgMap will take a map of any depth and flatten it down so there is only one level. N.B. The key will
@@ -176,7 +181,12 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return err
 	}
 
-	return fmt.Errorf("%w", v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
+	err = v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
 		config.Squash = true
-	}))
+	})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }

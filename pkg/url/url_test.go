@@ -31,8 +31,8 @@ func TestURLValidation(t *testing.T) {
 		{input: "my-host.delivery.puppetlabs.net:9999/test?xyz=abc123", port: 8081, scheme: "http", want: "http://my-host.delivery.puppetlabs.net:9999", err: ""},
 		{input: "http://my-host.delivery.puppetlabs.net:8888", port: 8081, scheme: "", want: "http://my-host.delivery.puppetlabs.net:8888", err: ""},
 		{input: "my-host.delivery.puppetlabs.net", port: 0, scheme: "https", want: "https://my-host.delivery.puppetlabs.net", err: ""},
-		{input: "my-host.delivery.puppetlabs.net", port: 0, scheme: "", want: "", err: "No scheme available"},
-		{input: "", port: 9999, scheme: "http", want: "", err: "Input cannot be empty"},
+		{input: "my-host.delivery.puppetlabs.net", port: 0, scheme: "", want: "", err: "no scheme available"},
+		{input: "", port: 9999, scheme: "http", want: "", err: "input cannot be empty"},
 	}
 
 	for _, test := range tests {

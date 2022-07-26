@@ -7,7 +7,7 @@ linters:
     - exhaustivestruct    # deprecated
     - exhaustruct         # too cautious
     - golint              # deprecated
-    - ifshort             # enforces an unintuitive coding style
+    - ifshort             # unintuitive coding style
     - interfacer          # deprecated
     - maligned            # deprecated
     - nonamedreturns      # named returns are required to handle errors from deferred functions
@@ -20,6 +20,11 @@ linters-settings:
     tab-width: 4
 
 issues:
+  exclude-rules:
+    - path: ^.*main\.go$
+      linters:
+        - forbidigo
+        - gochecknoglobals
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0

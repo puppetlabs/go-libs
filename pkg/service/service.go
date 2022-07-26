@@ -85,6 +85,8 @@ var (
 	errRecoveredFromPanic             = errors.New("recovered from panic")
 )
 
+var routerMap = make(map[string]*gin.RouterGroup)
+
 // Defining the readiness handler for potential use by k8s.
 func readinessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -131,7 +133,6 @@ func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
 	if handlerGroup == "" {
 		return &engine.RouterGroup
 	}
-	routerMap := make(map[string]*gin.RouterGroup)
 	routeGroup, found := routerMap[handlerGroup]
 	if found {
 		return routeGroup
