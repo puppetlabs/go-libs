@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-      - name: Run golangci-lint
+      - name: Run linters
         uses: golangci/golangci-lint-action@v3
         with:
           args: "--timeout=2m --verbose"
