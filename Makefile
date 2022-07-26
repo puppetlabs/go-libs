@@ -44,7 +44,7 @@ install-tools:
 	@go install github.com/githubnemo/CompileDaemon@latest
 	@go install github.com/daixiang0/gci@latest
 	@go install golang.org/x/tools/cmd/goimports@latest
-	@go install mvdan.cc/gofumpt@v0.3.0	# v0.3.1 fails to install on Go 1.16
+	@go install mvdan.cc/gofumpt@v0.3.0 # v0.3.1 fails to install on Go 1.16
 
 # run linters
 lint:
