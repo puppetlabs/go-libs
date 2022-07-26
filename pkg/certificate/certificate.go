@@ -31,14 +31,6 @@ type KeyPair struct {
 
 var errNilPointerForCAKeyPair = errors.New("nil pointer for root CA key pair")
 
-var subject = pkix.Name{
-	Organization:       []string{"Puppet, Inc"},
-	OrganizationalUnit: []string{"Estate Reporting internal"},
-	Country:            []string{"US"},
-	Province:           []string{"Oregon"},
-	Locality:           []string{"Portland"},
-}
-
 // HostNames contains the list of hosts the cert will be generated for.
 type HostNames []string
 
@@ -80,7 +72,7 @@ func GenerateCA() (*KeyPair, error) {
 
 	template := &x509.Certificate{
 		SerialNumber:          serialNum,
-		Subject:               subject,
+		Subject:               getSubject(),
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(time.Hour * numberOfHoursInYear),
 		IsCA:                  true,
@@ -158,7 +150,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 
 	template := &x509.Certificate{
 		SerialNumber: serialNum,
-		Subject:      subject,
+		Subject:      getSubject(),
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().Add(time.Hour * numberOfHoursInYear),
 		SubjectKeyId: subjectKeyID[:],
@@ -186,4 +178,14 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	}
 
 	return &keyPair, nil
+}
+
+func getSubject() pkix.Name {
+	return pkix.Name{
+		Organization:       []string{"Puppet, Inc"},
+		OrganizationalUnit: []string{"Estate Reporting internal"},
+		Country:            []string{"US"},
+		Province:           []string{"Oregon"},
+		Locality:           []string{"Portland"},
+	}
 }
