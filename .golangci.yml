@@ -16,6 +16,8 @@ linters:
     - wsl                 # too aggressive
 
 linters-settings:
+  funlen:
+    lines: -1
   lll:
     tab-width: 4
 
@@ -24,6 +26,7 @@ issues:
     - path: ^.*main\.go$
       linters:
         - forbidigo
+        - funlen
         - gochecknoglobals
   exclude-use-default: false
   max-issues-per-linter: 0

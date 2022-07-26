@@ -23,7 +23,7 @@ var (
 	errViperConfigNonPointerArgument = errors.New("reading Viper config requires a pointer argument")
 )
 
-func setupViperConfig(cfg interface{}, v *viper.Viper) error {
+func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 	// Get the type from the pointer or the struct itself - N.B. It will be a struct when called recursively.
 	var t reflect.Type
 	cfgType := reflect.TypeOf(cfg).Kind()
@@ -45,7 +45,7 @@ func setupViperConfig(cfg interface{}, v *viper.Viper) error {
 			} else {
 				val = reflect.ValueOf(cfg).Field(i).Interface()
 			}
-			err := setupViperConfig(val, v)
+			err := setUpViperConfig(val, v)
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ func LoadViperConfig(cfg interface{}) error {
 		return errViperConfigNonPointerArgument
 	}
 	v := viper.New()
-	err := setupViperConfig(cfg, v)
+	err := setUpViperConfig(cfg, v)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return fmt.Errorf("%w", err)
 	}
 
-	err = setupViperConfig(cfg, v)
+	err = setUpViperConfig(cfg, v)
 	if err != nil {
 		return err
 	}
