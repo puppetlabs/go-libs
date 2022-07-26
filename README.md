@@ -2,7 +2,7 @@
 
 This repository is intended as a resource for common Go code. It is hoped that the libraries provided can be used across projects to solve common problems, boost efficiency, and improve standards across the board.
 
-Feel free to open a pull request or discuss potential improvements.
+Feel free to open a pull request or suggest improvements.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/puppetlabs/go-libs)](https://goreportcard.com/report/github.com/puppetlabs/go-libs)
     
