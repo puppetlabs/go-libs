@@ -89,11 +89,13 @@ func generateCerts(filepath string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate, fileModeUserReadWriteOnly)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate,
+		fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey, fileModeUserReadWriteOnly)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey,
+		fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
