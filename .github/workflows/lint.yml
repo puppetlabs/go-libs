@@ -15,5 +15,4 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           args: "--timeout=2m --verbose"
-          github-token: ${{ secrets.github_token }}
           version: latest
