@@ -19,9 +19,8 @@ import (
 )
 
 const (
-	numberOfBitsForKey        = 2048
-	numberOfHoursInYear       = 8760
-	upperLimitForRandomNumber = 999999999999999999
+	numberOfBitsForKey  = 2048
+	numberOfHoursInYear = 8760
 )
 
 // KeyPair stores a PEM encoded certificate and
@@ -54,12 +53,6 @@ func (h *HostNames) Set(value string) error {
 
 // GenerateCA will generate a new CA key/cert pair.
 func GenerateCA() (*KeyPair, error) {
-	// choose a random number between 0 and 999999999999999999
-	randomNum, _ := rand.Int(rand.Reader, big.NewInt(int64(upperLimitForRandomNumber)))
-	// multiply by 100 to get it up to 20 digits. hard coding it overflows int64
-	multiplier := 100
-	serialNum := randomNum.Mul(randomNum, big.NewInt(int64(multiplier)))
-
 	privateKey, err := rsa.GenerateKey(rand.Reader, numberOfBitsForKey)
 	if err != nil {
 		return nil, fmt.Errorf("can't create private key because: %w", err)
@@ -71,6 +64,8 @@ func GenerateCA() (*KeyPair, error) {
 	}
 
 	subjectKeyID := sha256.Sum256(marshalPublicKey)
+
+	serialNum := generateSerialNumber()
 
 	template := &x509.Certificate{
 		SerialNumber:          serialNum,
@@ -116,11 +111,7 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 		return nil, fmt.Errorf("can't parse ca certificate because: %w", err)
 	}
 
-	// choose a random number between 0 and 999999999999999999
-	randomNum, _ := rand.Int(rand.Reader, big.NewInt(upperLimitForRandomNumber))
-	// multiply by 100 to get it up to 20 digits. hard coding it overflows int64
-	multiplier := 100
-	serialNum := randomNum.Mul(randomNum, big.NewInt(int64(multiplier)))
+	serialNum := generateSerialNumber()
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, numberOfBitsForKey)
 	if err != nil {
@@ -180,6 +171,17 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	}
 
 	return &keyPair, nil
+}
+
+func generateSerialNumber() *big.Int {
+	// choose a random number between 0 and 999999999999999999
+	upperLimitForRandomNumber := 999999999999999999
+	randomNum, _ := rand.Int(rand.Reader, big.NewInt(int64(upperLimitForRandomNumber)))
+
+	// multiply by 100 to get it up to 20 digits. hard coding it overflows int64
+	multiplier := 100
+
+	return randomNum.Mul(randomNum, big.NewInt(int64(multiplier)))
 }
 
 func getSubject() pkix.Name {
