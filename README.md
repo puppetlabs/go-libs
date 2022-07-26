@@ -36,15 +36,16 @@ After running the generate-service make target the service will exist in the tar
 | `image`   | Builds the Docker image                                                    |
 
 ### Generated Service Code
+
 Code will be generated into the directory specified upon running the script. A `main.go` file will exist under the `cmd` directory, and a `packages` directory will exist containing config and handlers. The code under the `pkg` directory will need edited to supplement configuration and to add any new handlers. N.B. See the config package for details on how to tag config and use nested structs.
 
 ## Linting and Formatting
 
 We use the linter aggregator [golangci-lint](https://golangci-lint.run/).
 
-Run `make install-tools` from the project root to install development tools.
-
 `golangci-lint` cannot be installed as a Go package currently. It should instead be installed separately, such as using Homebrew.
+
+Run `make install-tools` from the project root to install development tools.
 
 Run `make format` from the project root to format all Go files in accordance with linter standards.
 
