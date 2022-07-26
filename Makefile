@@ -10,7 +10,7 @@ COMMIT=$(shell git describe --always)
 now=$(shell date +'%Y-%m-%d_%T')
 TEST_SERVICE=test-generated-service
 
-all: test test_generated_service build
+all: lint test test_generated_service build
 
 dep:
 	@go mod download
@@ -23,6 +23,7 @@ generate-cert:
 	@echo "$(OK_COLOR)==> Generating new TLS certificate.$(NO_COLOR)"
 	@scripts/generate-cert.sh || exit 1
 
+# run unit tests
 test:
 	@echo "$(OK_COLOR)==> Running tests$(NO_COLOR)"
 	@go test -v -race -cover ./... || exit 1
@@ -39,7 +40,7 @@ build:
 	@echo "$(OK_COLOR)==> Building$(NO_COLOR)"
 	@CGO_ENABLED=0 go build -ldflags "-X main.sha1ver=${COMMIT} -X main.buildTime=${now}" -a -installsuffix cgo ./... || exit 1
 
-# installs development tools, such as a compiler daemon and formatting utilities, as Go packages
+# install development tools
 install-tools:
 	@go install github.com/githubnemo/CompileDaemon@latest
 	@go install github.com/daixiang0/gci@latest
@@ -50,7 +51,7 @@ install-tools:
 lint:
 	@golangci-lint run
 
-# run formatting utilities to improve formatting of Go files
+# run formatting utilities
 format:
 	goimports -l ./
 	gci write ./
