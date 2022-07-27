@@ -41,9 +41,9 @@ Code will be generated into the directory specified upon running the script. A `
 
 ## Linting and Formatting
 
-We use the linter aggregator [golangci-lint](https://golangci-lint.run/).
+This project uses the linter aggregator [golangci-lint](https://golangci-lint.run/).
 
-`golangci-lint` cannot be installed as a Go package currently. It should instead be installed separately, such as using Homebrew.
+Currently, `golangci-lint` cannot be reliably installed as a Go package. It should be installed using an alternative method, such as Homebrew.
 
 Run `make install-tools` from the project root to install development tools.
 
