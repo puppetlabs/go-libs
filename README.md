@@ -49,11 +49,13 @@ This project uses the linter aggregator [golangci-lint](https://golangci-lint.ru
 
 Currently, `golangci-lint` cannot be reliably installed as a Go package. It should be installed using an alternative method, such as Homebrew.
 
-Run `make install-tools` from the project root to install development tools.
+From the project root, run:
 
-Run `make format` from the project root to format all Go files in accordance with linter standards.
+`make install-tools` to install development tools.
 
-Run `make lint` from the project root to run the linters.
+`make format` to format all Go files in accordance with linter standards.
+
+`make lint` to run the linters.
 
 ## To Do
 * Create a workstack — there are quite a few things could go in here, such as workers
