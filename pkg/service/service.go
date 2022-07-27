@@ -85,6 +85,7 @@ var (
 	errRecoveredFromPanic             = errors.New("recovered from panic")
 )
 
+// nolint: gochecknoglobals // pragmatic use of global variable, not doing much harm here
 var routerMap = make(map[string]*gin.RouterGroup)
 
 // Defining the readiness handler for potential use by k8s.
