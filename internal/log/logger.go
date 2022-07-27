@@ -12,13 +12,13 @@ const DefaultLevel = logrus.DebugLevel
 
 // init runs when this library is first loaded.
 // This function sets the defaults that we want to use.
+// nolint: gochecknoinits // pragmatic usage of init function, not doing much harm here
 func init() {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors: true,
 	})
 
 	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
 	logrus.SetOutput(os.Stdout)
 
 	// Only log the info severity or above.
