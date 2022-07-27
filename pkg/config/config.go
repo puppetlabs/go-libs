@@ -23,7 +23,7 @@ var (
 	errViperConfigNonPointerArgument = errors.New("reading Viper config requires a pointer argument")
 )
 
-// nolint:cyclop // naturally complex (we may be able to simplify this function)
+// nolint:cyclop // naturally complex, we may be able to simplify this function
 func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 	// Get the type from the pointer or the struct itself - N.B. It will be a struct when called recursively.
 	var t reflect.Type
