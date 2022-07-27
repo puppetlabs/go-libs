@@ -1,3 +1,4 @@
+// Package log provides facilities for logging.
 package log
 
 import (
@@ -6,17 +7,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DefaultLevel is the default logging level to use, when no other is specified
+// DefaultLevel is the default logging level to use, when no other is specified.
 const DefaultLevel = logrus.DebugLevel
 
 // init runs when this library is first loaded.
 // This function sets the defaults that we want to use.
+// nolint: gochecknoinits // pragmatic usage of init function, not doing much harm here
 func init() {
 	logrus.SetFormatter(&logrus.TextFormatter{
-		ForceColors: true})
+		ForceColors: true,
+	})
 
 	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
 	logrus.SetOutput(os.Stdout)
 
 	// Only log the info severity or above.
@@ -24,7 +26,7 @@ func init() {
 }
 
 // SetLogLevel parses the string and sets the log level to that which is requested.
-// if it fails to parse it will fall back to the default level
+// if it fails to parse it will fall back to the default level.
 func SetLogLevel(level string) {
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
@@ -36,7 +38,7 @@ func SetLogLevel(level string) {
 	logrus.SetLevel(lvl)
 }
 
-//CreateLogger will create a logrus logger with the desired log level.
+// CreateLogger will create a logrus logger with the desired log level.
 func CreateLogger(logLevel string) *logrus.Logger {
 	logger := logrus.New()
 	logger.Formatter = logrus.StandardLogger().Formatter
@@ -47,5 +49,6 @@ func CreateLogger(logLevel string) *logrus.Logger {
 	} else {
 		logger.Level = level
 	}
+
 	return logger
 }

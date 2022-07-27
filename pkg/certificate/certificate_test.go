@@ -101,8 +101,10 @@ func TestNilRootCertFailsCertGeneration(t *testing.T) {
 }
 
 func TestInvalidRootCertFailsCertGeneration(t *testing.T) {
-	rootKeyPair := &KeyPair{Certificate: []byte{},
-		PrivateKey: []byte{}}
+	rootKeyPair := &KeyPair{
+		Certificate: []byte{},
+		PrivateKey:  []byte{},
+	}
 	_, err := GenerateSignedCert(rootKeyPair, []string{"externalhost"}, "externalhost")
 	fmt.Println(err)
 	if err == nil {

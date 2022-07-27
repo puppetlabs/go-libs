@@ -9,9 +9,13 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/puppetlabs/go-libs/pkg/util"
-
 	"github.com/puppetlabs/go-libs/pkg/certificate"
+	"github.com/puppetlabs/go-libs/pkg/util"
+)
+
+const (
+	fileModeUserReadWriteOnly                       = 0o600
+	fileModeUserReadWriteExecuteGroupReadOthersRead = 0o744
 )
 
 var (
@@ -36,7 +40,7 @@ var (
 	}
 )
 
-//Substitution will hold the values to be substituted in the templates.
+// Substitution will hold the values to be substituted in the templates.
 type Substitution struct {
 	Name                  string
 	Port                  string
@@ -60,17 +64,18 @@ func checkError(err error) {
 func writeOutputFile(inputFile string, subst Substitution, outputFile string) error {
 	tmpl, err := template.ParseFiles(inputFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	var tmplOutput bytes.Buffer
 	err = tmpl.Execute(&tmplOutput, subst)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), 0600)
+	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), fileModeUserReadWriteOnly)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
 
@@ -82,16 +87,19 @@ func generateCerts(filepath string) error {
 
 	certKeyPair, err := certificate.GenerateSignedCert(CAKeypair, []string{"localhost"}, "localhost")
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate, 0600)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate,
+		fileModeUserReadWriteOnly)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey, 0600)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey,
+		fileModeUserReadWriteOnly)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
 
@@ -111,9 +119,10 @@ func main() {
 	var tlsCertFile string
 	var tlsKeyFile string
 
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "cmd", name), 0744))
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "config"), 0744))
-	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"), 0744))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "cmd", name), fileModeUserReadWriteExecuteGroupReadOthersRead))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "config"), fileModeUserReadWriteExecuteGroupReadOthersRead))
+	checkError(os.MkdirAll(filepath.Join(serviceDir, "pkg", "handlers"),
+		fileModeUserReadWriteExecuteGroupReadOthersRead))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "handlers.go"),
 		filepath.Join(serviceDir, "pkg", "handlers", "handlers.go")))
 	checkError(util.FileCopy(filepath.Join(dir, "internal", "tmpl", "config_test.go.tmpl"),
@@ -124,7 +133,8 @@ func main() {
 		tlsKeyFile = fmt.Sprintf("%s.%s", certPrefix, keySuffix)
 	}
 
-	substitution := Substitution{Name: name,
+	substitution := Substitution{
+		Name:                  name,
 		Port:                  listenPort,
 		ListenAddress:         listenAddress,
 		CertFile:              tlsCertFile,
@@ -133,7 +143,8 @@ func main() {
 		CorsEnabled:           boolMap[corsEnabled],
 		ReadinessCheckEnabled: boolMap[readinessCheckEnabled],
 		RateLimit:             rateLimitInt,
-		RateInterval:          rateIntervalInt}
+		RateInterval:          rateIntervalInt,
+	}
 
 	checkError(writeOutputFile(filepath.Join(dir, "internal", "tmpl", "config.go.tmpl"), substitution,
 		filepath.Join(serviceDir, "pkg", "config", "config.go")))

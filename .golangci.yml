@@ -1,0 +1,35 @@
+run:
+  tests: false
+
+linters:
+  enable-all: true
+  disable:
+    - exhaustive          # not always practical
+    - exhaustivestruct    # deprecated
+    - exhaustruct         # too cautious
+    - golint              # deprecated
+    - ifshort             # unintuitive coding style
+    - interfacer          # deprecated
+    - maligned            # deprecated
+    - nonamedreturns      # named returns are required to handle errors from deferred functions
+    - scopelint           # deprecated
+    - varnamelen          # complains about short variable names even if they are appropriate
+    - wsl                 # too aggressive
+
+linters-settings:
+  funlen:
+    lines: -1
+  lll:
+    tab-width: 4
+
+issues:
+  exclude-rules:
+    - path: ^.*main\.go$
+      linters:
+        - cyclop
+        - forbidigo
+        - funlen
+        - gochecknoglobals
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -4,7 +4,7 @@ Package concurrency contains code that helps build multi-threaded applications
 package concurrency
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,10 +35,12 @@ type Dispatcher interface {
 	ProcessedJobs() uint64
 }
 
+var errTimedOutWaitingToSubmitTask = errors.New("timed out waiting to submit task")
+
 // NewDispatcher create a new Dispatcher.  The ID is used to identify the dispatcher in log messages.
 // workers is the number of go routines that this dispatcher will create to process work.
 // queueSize is the size of the channel used to store tasks.
-func NewDispatcher(id string, workers, queueSize int) Dispatcher {
+func NewDispatcher(id string, workers, queueSize int) *dispatcher {
 	return &dispatcher{
 		ID:      id,
 		workers: workers,
@@ -84,7 +86,7 @@ func (d *dispatcher) SubmitWork(fn func() error) error {
 }
 
 // ProcessedJobs returns the number of jobs that have been executed by this instance
-// of the disptacher
+// of the dispatcher.
 func (d *dispatcher) ProcessedJobs() uint64 {
 	return d.ops
 }
@@ -109,13 +111,14 @@ func submit(task Task, queue chan Task, timeout <-chan time.Time) error {
 	select {
 	case queue <- task:
 	case <-timeout:
-		return fmt.Errorf("Timed out waiting to submit task")
+		return errTimedOutWaitingToSubmitTask
 	}
+
 	return nil
 }
 
-// dispatcher.  This keeps state for the dispatcher, including a unique name, the number of works to create
-// and a channel of tasks to be processed.  A dispatcher
+// dispatcher keeps state for the dispatcher, including a unique name, the number of works to create
+// and a channel of tasks to be processed.
 type dispatcher struct {
 	ID      string
 	workers int

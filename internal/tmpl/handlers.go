@@ -1,3 +1,4 @@
+// Package handlers contains request handlers.
 package handlers
 
 import (
@@ -6,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//HelloWorld is a basic handler setup to illustrate what a handler would look like.
+// HelloWorld is a basic handler setup to illustrate what a handler would look like.
 func HelloWorld() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.String(http.StatusOK, "Hello world")
