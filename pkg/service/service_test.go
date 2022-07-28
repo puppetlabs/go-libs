@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -101,7 +102,23 @@ func helloWorldHandler() func(c *gin.Context) {
 	}
 }
 
-// returnWithResponseCode returns the code that is passed in
+// returnEarlyHandler is a function that will return having had no impact on the context.
+func returnEarlyHandler() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		newCtx := context.WithValue(c.Request.Context(), "a", "b")
+
+		c.Request = c.Request.WithContext(newCtx)
+	}
+}
+
+// errorHandler is a dummy handler to be used to test errors.
+func errorHandler(status int) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Status(status)
+	}
+}
+
+// returnWithResponseCode returns the code that is passed in.
 func returnWithResponseCode(httpStatus int) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// Return what would be returned if access is denied.
@@ -140,6 +157,18 @@ func TestAnyMethod(t *testing.T) {
 	_, err := checkMultipleResponseCodes(validMethods, testEndpoint, cfg, http.StatusOK)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestInvalidMethod(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers:      []Handler{{Method: "blah", Handler: helloWorldHandler(), Path: testEndpoint}},
+	}
+
+	_, err := checkMultipleResponseCodes(validMethods, testEndpoint, cfg, http.StatusOK)
+	if err == nil {
+		t.Error("Invalid method passed in and error expected.")
 	}
 }
 
@@ -355,6 +384,57 @@ func TestMetricsEndpoint(t *testing.T) {
 	}
 
 	_, err := checkResponseCode(http.MethodGet, metricsEndpoint, cfg, http.StatusOK)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestErrorHandlerNoGroup(t *testing.T) {
+	errorCode := http.StatusInternalServerError
+
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers:      []Handler{{Method: http.MethodGet, Handler: returnEarlyHandler(), Path: testEndpoint}},
+		ErrorHandler: &MiddlewareHandler{
+			Handler: errorHandler(errorCode),
+		},
+	}
+
+	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, errorCode)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestErrorHandlerOnGroup(t *testing.T) {
+	errorCode := http.StatusInternalServerError
+
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers:      []Handler{{Method: http.MethodGet, Handler: returnEarlyHandler(), Path: testEndpoint, Group: "TestErrorHandlerOnGroup"}},
+		ErrorHandler: &MiddlewareHandler{
+			Handler: errorHandler(errorCode),
+			Groups:  []string{"TestErrorHandlerOnGroup"},
+		},
+	}
+
+	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, errorCode)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestErrorHandlerOnUnusedGroupNotExercised(t *testing.T) {
+	cfg := Config{
+		ListenAddress: ":8888",
+		Handlers:      []Handler{{Method: http.MethodGet, Handler: helloWorldHandler(), Path: testEndpoint}},
+		ErrorHandler: &MiddlewareHandler{
+			Handler: errorHandler(http.StatusInternalServerError),
+			Groups:  []string{"TestErrorHandlerOnGroup"},
+		},
+	}
+
+	_, err := checkResponseCode(http.MethodGet, testEndpoint, cfg, http.StatusOK)
 	if err != nil {
 		t.Error(err)
 	}

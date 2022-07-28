@@ -35,6 +35,7 @@ type Config struct {
   RateLimit          *RateLimitConfig         //Optional rate limiting config  
   MiddlewareHandlers []MiddlewareHandler      //Optional middleware handlers which will be run on every request  
   Metrics            bool                     //Optional. If true a prometheus metrics endpoint will be exposed at /metrics/  
+  ErrorHandler       *MiddlewareHandler       //Optional. If true a handler will be added to the end of the chain.
 }  
   
 //Handler will hold all the callback handlers to be registered. N.B. gin will be used.

@@ -28,15 +28,16 @@ const (
 
 // Config will hold the configuration of the service.
 type Config struct {
-	ListenAddress      string                   // Address in the format [host/ip]:port. Mandatory
-	LogLevel           string                   // INFO,FATAL,ERROR,WARN, DEBUG, TRACE
-	Cors               *CorsConfig              // Optional cors config
+	ListenAddress      string                   // Address in the format [host/ip]:port. Mandatory.
+	LogLevel           string                   // INFO,FATAL,ERROR,WARN, DEBUG, TRACE.
+	Cors               *CorsConfig              // Optional cors config.
 	ReadinessCheck     bool                     // Set to true to add a readiness handler at /readiness.
-	Handlers           []Handler                // Array of handlers
-	CertConfig         *ServerCertificateConfig // Optional TLS configuration
-	RateLimit          *RateLimitConfig         // Optional rate limiting config
-	MiddlewareHandlers []MiddlewareHandler      // Optional middleware handlers which will be run on every request
-	Metrics            bool                     // Optional. If true, exposes a Prometheus metrics endpoint at /metrics/
+	Handlers           []Handler                // Array of handlers.
+	CertConfig         *ServerCertificateConfig // Optional TLS configuration.
+	RateLimit          *RateLimitConfig         // Optional rate limiting config.
+	MiddlewareHandlers []MiddlewareHandler      // Optional middleware handlers which will be run on every request.
+	Metrics            bool                     // Optional. If true add a prometheus endpoint.
+	ErrorHandler       *MiddlewareHandler       // Optional. If true a handler will be added to the end of the chain.
 }
 
 // Handler will hold all the callback handlers to be registered. N.B. gin will be used.
@@ -172,6 +173,23 @@ func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 	}
 }
 
+func setupErrorHandler(errorHandler MiddlewareHandler, engine *gin.Engine) {
+	fn := func(c *gin.Context) {
+		c.Next()
+
+		errorHandler.Handler(c)
+	}
+
+	if len(errorHandler.Groups) == 0 {
+		engine.RouterGroup.Use(fn)
+	} else {
+		for _, handlerGroupLabel := range errorHandler.Groups {
+			handlerGroup := getRouterGroup(engine, handlerGroupLabel)
+			handlerGroup.Use(fn)
+		}
+	}
+}
+
 func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -223,8 +241,13 @@ func NewService(cfg *Config) (*Service, error) {
 		router.Handle(http.MethodGet, "metrics", gin.WrapH(promhttp.Handler()))
 	}
 
+	if cfg.ErrorHandler != nil {
+		setupErrorHandler(*cfg.ErrorHandler, router)
+	}
+
 	setupRateLimiting(cfg.RateLimit, router)
 	setupMiddleware(cfg.MiddlewareHandlers, router)
+
 	err := setupEndpoints(cfg.Handlers, router)
 	if err != nil {
 		return nil, err

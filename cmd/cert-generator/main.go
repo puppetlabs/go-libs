@@ -59,6 +59,7 @@ func main() {
 		hostnames = []string{"localhost"}
 	}
 
+	fmt.Println(*commonName)
 	certKeyPair, err := certificate.GenerateSignedCert(CAKeyPair, hostnames, *commonName)
 	if err != nil {
 		fmt.Printf("Failed to generate TLS cerificate :%s", err)
