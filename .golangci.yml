@@ -4,16 +4,17 @@ run:
 linters:
   enable-all: true
   disable:
-    - exhaustive          # not always practical
+    - exhaustive          # not practical
     - exhaustivestruct    # deprecated
     - exhaustruct         # too cautious
     - golint              # deprecated
     - ifshort             # unintuitive coding style
     - interfacer          # deprecated
     - maligned            # deprecated
+    - nolintlint          # (*) disabled until 'leading space' clash with gofmt/gofumpt formatting is resolved
     - nonamedreturns      # named returns are required to handle errors from deferred functions
     - scopelint           # deprecated
-    - varnamelen          # complains about short variable names even if they are appropriate
+    - varnamelen          # disallows short variable names even if they are appropriate
     - wsl                 # too aggressive
 
 linters-settings:
