@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -35,13 +34,13 @@ func main() {
 	flag.Parse()
 
 	if caCert != nil && len(*caCert) > 0 && caKey != nil && len(*caKey) > 0 {
-		certBytes, err := ioutil.ReadFile(*caCert)
+		certBytes, err := os.ReadFile(*caCert)
 		if err != nil {
 			fmt.Printf("Failed to read CA certificate file %s", err)
 			os.Exit(errorExitCode)
 		}
 
-		keyBytes, err := ioutil.ReadFile(*caKey)
+		keyBytes, err := os.ReadFile(*caKey)
 		if err != nil {
 			fmt.Printf("Failed to read CA private key file %s", err)
 			os.Exit(errorExitCode)
@@ -67,14 +66,14 @@ func main() {
 	}
 
 	if generateCAFiles != nil && *generateCAFiles {
-		err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.crt")), CAKeyPair.Certificate,
+		err = os.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.crt")), CAKeyPair.Certificate,
 			fileModeUserReadWriteOnly)
 		if err != nil {
 			fmt.Printf("Failed to write CA certificate file to disk :%s", err)
 			os.Exit(errorExitCode)
 		}
 
-		err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.key")), CAKeyPair.PrivateKey,
+		err = os.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "ca.key")), CAKeyPair.PrivateKey,
 			fileModeUserReadWriteOnly)
 		if err != nil {
 			fmt.Printf("Failed to write CA key file to disk: %s.", err)
@@ -82,14 +81,14 @@ func main() {
 		}
 	}
 
-	err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.crt")), certKeyPair.Certificate,
+	err = os.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.crt")), certKeyPair.Certificate,
 		fileModeUserReadWriteOnly)
 	if err != nil {
 		fmt.Printf("Failed to write TLS cert file to disk: %s.", err)
 		os.Exit(errorExitCode)
 	}
 
-	err = ioutil.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.key")), certKeyPair.PrivateKey,
+	err = os.WriteFile(fmt.Sprint(filepath.Join(filepath.Clean(*directory), "tls.key")), certKeyPair.PrivateKey,
 		fileModeUserReadWriteOnly)
 	if err != nil {
 		fmt.Printf("Failed to write TLS key file to disk: %s.", err)

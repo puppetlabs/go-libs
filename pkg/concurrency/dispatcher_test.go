@@ -3,7 +3,7 @@ package concurrency_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"strconv"
 	"sync/atomic"
@@ -16,7 +16,7 @@ import (
 
 // BenchmarkDispatcher creates a dispatcher, starts it and calls run
 func BenchmarkDispatcher(b *testing.B) {
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 
 	// Create Dispatcher and Start workers
 	dispatcher := concurrency.NewDispatcher("test", 128, 1000)

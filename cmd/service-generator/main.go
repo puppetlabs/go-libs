@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -71,7 +70,7 @@ func writeOutputFile(inputFile string, subst Substitution, outputFile string) er
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(outputFile, tmplOutput.Bytes(), fileModeUserReadWriteOnly)
+	err = os.WriteFile(outputFile, tmplOutput.Bytes(), fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -89,12 +88,12 @@ func generateCerts(filepath string) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate,
+	err = os.WriteFile(fmt.Sprintf("%s.%s", filepath, certSuffix), certKeyPair.Certificate,
 		fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey,
+	err = os.WriteFile(fmt.Sprintf("%s.%s", filepath, keySuffix), certKeyPair.PrivateKey,
 		fileModeUserReadWriteOnly)
 	if err != nil {
 		return fmt.Errorf("%w", err)
