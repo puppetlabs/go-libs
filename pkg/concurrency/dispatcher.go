@@ -20,7 +20,7 @@ type Task interface {
 
 // Dispatcher defines an interface.
 // There is only one implementation of the dispatcher available, but by using an interface it forces
-// the user to institate the dispatcher by using the NewDispatcher function
+// the user to instantiate the dispatcher by using the NewDispatcher function
 //
 // The dispatcher can process work that is submitted either as a struct that implements the Task interface
 // or as an anonymous function.
@@ -40,7 +40,7 @@ var errTimedOutWaitingToSubmitTask = errors.New("timed out waiting to submit tas
 // NewDispatcher create a new Dispatcher.  The ID is used to identify the dispatcher in log messages.
 // workers is the number of go routines that this dispatcher will create to process work.
 // queueSize is the size of the channel used to store tasks.
-func NewDispatcher(id string, workers, queueSize int) *dispatcher {
+func NewDispatcher(id string, workers, queueSize int) Dispatcher {
 	return &dispatcher{
 		ID:      id,
 		workers: workers,

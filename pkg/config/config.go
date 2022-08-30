@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -68,7 +67,7 @@ func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 			// It is not mandatory to have a default set, so we will log this and move on.
 
 			//#nosec gosec picks this up. It is build time injection, so it is assumed this will be tested first.
-			fileBytes, err := ioutil.ReadFile(fileTag)
+			fileBytes, err := os.ReadFile(fileTag)
 			if err != nil {
 				logrus.Warnf("Unable to read file %s due to error %s.", fileTag, err)
 			}
