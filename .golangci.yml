@@ -11,6 +11,7 @@ linters:
     - golint              # deprecated
     - ifshort             # deprecated
     - interfacer          # deprecated
+    - ireturn             # good principle but occasional exceptions exist
     - maligned            # deprecated
     - nolintlint          # (*) disabled until 'leading space' clash with gofmt/gofumpt formatting is resolved
     - nonamedreturns      # named returns are required to handle errors from deferred functions
