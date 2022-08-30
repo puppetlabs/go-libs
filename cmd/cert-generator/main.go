@@ -1,3 +1,4 @@
+// Package main contains facilities for cert generation.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// Package main provides facilities for service generation.
 package main
 
 import (
