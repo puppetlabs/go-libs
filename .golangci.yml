@@ -21,6 +21,7 @@ linters:
     - varcheck            # deprecated
     - varnamelen          # disallows short variable names even if they are appropriate
     - wsl                 # too aggressive
+    - depguard
 
 linters-settings:
   funlen:

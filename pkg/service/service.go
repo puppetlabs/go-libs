@@ -290,17 +290,11 @@ func (s *Service) Run() error {
 			if !errors.Is(err, http.ErrServerClosed) {
 				logrus.Fatalf("Failed to start query service: %s\n", err)
 			}
-		} else {
-			if err := s.Server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-				logrus.Fatalf("Failed to start query service: %s\n", err)
-			}
+		} else if err := s.Server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			logrus.Fatalf("Failed to start query service: %s\n", err)
 		}
 	}()
 
 	// We want a graceful exit
-	if err := s.waitForShutdown(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.waitForShutdown()
 }
