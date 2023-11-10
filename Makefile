@@ -2,7 +2,7 @@ COMMIT=$(shell git describe --always)
 NOW=$(shell date +'%Y-%m-%d_%T')
 TEST_SERVICE=test-generated-service
 
-all: lint test test-generated-service build
+all: lint test build test-generated-service
 
 # install development tools
 PHONY+= install-tools
@@ -46,6 +46,8 @@ test-generated-service:
 	@echo "$(OK_COLOR)==>Testing generated service.$(NO_COLOR)"
 	@mkdir -p $(PWD)/$(TEST_SERVICE)
 	@go run -ldflags "-X main.name=$(TEST_SERVICE) -X main.serviceDir=$(PWD)/$(TEST_SERVICE) -X main.listenAddress=:8888 -X main.listenPort=8888" cmd/service-generator/main.go
+	@go mod tidy
+	@go get github.com/gin-gonic/gin
 	@cd $(PWD)/$(TEST_SERVICE);go test ./...
 	@rm -rf $(PWD)/$(TEST_SERVICE)
 

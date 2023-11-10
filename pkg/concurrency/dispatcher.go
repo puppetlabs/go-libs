@@ -30,7 +30,7 @@ type Task interface {
 type Dispatcher interface {
 	Start()
 	Stop()
-	Submit(Task) error
+	Submit(task Task) error
 	SubmitWork(fn func() error) error
 	ProcessedJobs() uint64
 }
@@ -46,11 +46,12 @@ func NewDispatcher(id string, workers, queueSize int) Dispatcher {
 		workers: workers,
 		tasks:   make(chan Task, queueSize),
 		wg:      sync.WaitGroup{},
+		ops:     0,
 	}
 }
 
 // Start the Dispatcher running.  No work will be processed until Start() is called.
-// This will start a a number of go routines that will consume work from the tasks queue.   Start will
+// This will start a number of go routines that will consume work from the tasks queue.   Start will
 // return once all go routines have been started.
 func (d *dispatcher) Start() {
 	logrus.Infof("Creating %d workers for %s dispatcher", d.workers, d.ID)
