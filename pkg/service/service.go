@@ -42,10 +42,11 @@ type Config struct {
 
 // Handler will hold all the callback handlers to be registered. N.B. gin will be used.
 type Handler struct {
-	Method  string               // HTTP method or service.AnyMethod to support all limits.
-	Path    string               // The path the endpoint runs on.
-	Group   string               // Optional - specify a group (used to control which middlewares will run)
-	Handler func(c *gin.Context) // The handler to be used.
+	Method          string                  // HTTP method or service.AnyMethod to support all limits.
+	Path            string                  // The path the endpoint runs on.
+	Group           string                  // Optional - specify a group (used to control which middlewares will run)
+	Handler         func(c *gin.Context)    // The handler to be used.
+	RateLimitConfig *HandlerRateLimitConfig // Optional rate limiting config specifically for the handler.
 }
 
 // MiddlewareHandler will hold a middleware handler and the groups on which it should be registered.
@@ -72,6 +73,12 @@ type CorsConfig struct {
 	Groups      []string     // Optional - which group(s) should the CORS config run on. Empty means the default route.
 	Enabled     bool         // Whether CORS is enabled or not.
 	OverrideCfg *cors.Config // Optional. Only required if you do not want to use the default CORS configuration.
+}
+
+// HandlerRateLimitConfig holds the rate limiting config fo a sepecific handler.
+type HandlerRateLimitConfig struct {
+	Limit  int // The number of requests allowed within the timeframe.
+	Within int // The timeframe(seconds) the requests are allowed in.
 }
 
 // Service will be the actual structure returned.
@@ -159,6 +166,10 @@ func setupRateLimiting(config *RateLimitConfig, engine *gin.Engine) {
 	}
 }
 
+func getRateLimitHandler(config *HandlerRateLimitConfig) gin.HandlerFunc {
+	return rateLimitHandler(config.Limit, config.Within)
+}
+
 func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
 	// Add middleware first then the handlers
 	for _, handler := range mwHandlers {
@@ -199,6 +210,17 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 
 	for _, handler := range handlers {
 		handlerGroup := getRouterGroup(engine, handler.Group)
+
+		// Create a new group on the fly with the rate limiter as the first entry point and copy the chain of handlers.
+		if handler.RateLimitConfig != nil {
+			newHandlerGroup := engine.Group("/")
+
+			newHandlerGroup.Handlers = append([]gin.HandlerFunc{getRateLimitHandler(handler.RateLimitConfig)},
+				handlerGroup.Handlers...)
+
+			handlerGroup = newHandlerGroup
+		}
+
 		switch method := handler.Method; method {
 		case http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodOptions:
 			handlerGroup.Handle(method, handler.Path, handler.Handler)
