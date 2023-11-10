@@ -38,12 +38,13 @@ type Config struct {
   ErrorHandler       *MiddlewareHandler       //Optional. If true a handler will be added to the end of the chain.
 }  
   
-//Handler will hold all the callback handlers to be registered. N.B. gin will be used.
+// Handler will hold all the callback handlers to be registered. N.B. gin will be used.
 type Handler struct {
-	Method  string               //HTTP method or service.AnyMethod to support all limits.
-	Path    string               //The path the endpoint runs on.
-	Group   string               //Optional - specify a group if this is to have it's own group. N.B. The point of the group is to allow middleware to run on some requests and not others(based on the group).
-	Handler func(c *gin.Context) //The handler to be used.
+	Method          string                  // HTTP method or service.AnyMethod to support all limits.
+	Path            string                  // The path the endpoint runs on.
+	Group           string                  // Optional - specify a group (used to control which middlewares will run)
+	Handler         func(c *gin.Context)    // The handler to be used.
+	RateLimitConfig *HandlerRateLimitConfig // Optional rate limiting config specifically for the handler.
 }
   
 //MiddlewareHandler will hold all the middleware and whether
@@ -71,6 +72,12 @@ type CorsConfig struct {
 	Enabled     bool         //Whether CORS is enabled or not.
 	OverrideCfg *cors.Config //Optional. This is only required if you do not want to use the default CORS configuration.
 } 
+
+// HandlerRateLimitConfig holds the rate limiting config fo a sepecific handler.
+type HandlerRateLimitConfig struct {
+	Limit  int // The number of requests allowed within the timeframe.
+	Within int // The timeframe(seconds) the requests are allowed in.
+}
   
 //Service will be the actual structure returned.  
 type Service struct {  
@@ -82,6 +89,7 @@ type Service struct {
 #### Notes
 - The cors config and the handlers are based on the gin framework : https://github.com/gin-gonic/gin.  
 - Rate limiting is done by the library github.com/cnjack/throttle.
+- Rate limiting can be added to a handler or on a per group basis. 
 - The group principle is based on Gin routergroups. The idea behind it is that not all middleware needs to run on 
 all requests so the middleware in a group will only run against an endpoint in that group. 
 This is applied to cors, rate limiting and any middleware in general.  
