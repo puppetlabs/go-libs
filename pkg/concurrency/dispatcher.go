@@ -41,7 +41,7 @@ var errTimedOutWaitingToSubmitTask = errors.New("timed out waiting to submit tas
 // workers is the number of go routines that this dispatcher will create to process work.
 // queueSize is the size of the channel used to store tasks.
 //
-//nolint:ireturn
+//nolint:ireturn,nolintlint // the nolintlint linter generates a false positive here
 func NewDispatcher(id string, workers int, queueSize int) Dispatcher {
 	return &dispatcher{
 		ID:      id,
