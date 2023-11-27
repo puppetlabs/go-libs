@@ -4,34 +4,42 @@ run:
 linters:
   enable-all: true
   disable:
-    - deadcode            # deprecated
-    - exhaustive          # not practical
-    - exhaustivestruct    # deprecated
-    - exhaustruct         # not practical
-    - golint              # deprecated
-    - ifshort             # deprecated
-    - interfacer          # deprecated
-    - ireturn             # good principle but occasional exceptions exist
-    - maligned            # deprecated
-    - nolintlint          # (*) disabled until 'leading space' clash with gofmt/gofumpt formatting is resolved
-    - nonamedreturns      # named returns are required to handle errors from deferred functions
-    - nosnakecase         # deprecated
-    - scopelint           # deprecated
-    - structcheck         # deprecated
-    - varcheck            # deprecated
-    - varnamelen          # disallows short variable names even if they are appropriate
-    - wsl                 # too aggressive
-    - depguard
+    - cyclop            # better judged on a case-by-case basis
+    - depguard          # we do not restrict package imports
+    - exhaustruct       # mandatory initialization of all struct fields is impractical
+    - funlen            # better judged on a case-by-case basis
+    - gochecknoglobals  # better judged on a case-by-case basis
+    - gocognit          # better judged on a case-by-case basis
+    - goconst           # better judged on a case-by-case basis
+    - gomnd             # better judged on a case-by-case basis
+    - nestif            # better judged on a case-by-case basis
+    - nonamedreturns    # named returns are required to handle errors from deferred functions
+    - varnamelen        # better judged on a case-by-case basis
+    - wsl               # too aggressive
+
+    # linters disabled because they are deprecated:
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+    - varcheck
 
 linters-settings:
-  funlen:
-    lines: -1
   lll:
     tab-width: 4
+  tagliatelle:
+    case:
+      rules:
+        json: snake
 
 issues:
   exclude-rules:
-    - path: ^.*main\.go$
+    - path: cmd/
       linters:
         - cyclop
         - forbidigo

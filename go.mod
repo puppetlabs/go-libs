@@ -1,6 +1,6 @@
 module github.com/puppetlabs/go-libs
 
-go 1.19
+go 1.21
 
 require (
 	github.com/cnjack/throttle v0.0.0-20160727064406-525175b56e18

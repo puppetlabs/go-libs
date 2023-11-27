@@ -4,13 +4,15 @@ TEST_SERVICE=test-generated-service
 
 all: lint test build test-generated-service
 
-# install development tools
+# install the necessary development tools
 PHONY+= install-tools
 install-tools:
-	@go install github.com/githubnemo/CompileDaemon@latest
+	@go install github.com/4meepo/tagalign/cmd/tagalign@latest
 	@go install github.com/daixiang0/gci@latest
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+	@go install github.com/ypresto/CompileDaemon@bump-sys-fork # using fork until bug resolved: https://github.com/githubnemo/CompileDaemon/pull/76
 	@go install golang.org/x/tools/cmd/goimports@latest
-	@go install mvdan.cc/gofumpt@v0.3.0 # v0.3.1 fails to install on Go 1.16
+	@go install mvdan.cc/gofumpt@latest
 
 # run formatting utilities
 PHONY+= format
@@ -18,6 +20,7 @@ format:
 	@goimports -l ./
 	@gci write ./
 	@gofumpt -l -w ./
+	@tagalign -fix -sort ./...
 
 # run linters
 PHONY+= lint

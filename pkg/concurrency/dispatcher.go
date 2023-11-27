@@ -40,7 +40,9 @@ var errTimedOutWaitingToSubmitTask = errors.New("timed out waiting to submit tas
 // NewDispatcher create a new Dispatcher.  The ID is used to identify the dispatcher in log messages.
 // workers is the number of go routines that this dispatcher will create to process work.
 // queueSize is the size of the channel used to store tasks.
-func NewDispatcher(id string, workers, queueSize int) Dispatcher {
+//
+//nolint:ireturn
+func NewDispatcher(id string, workers int, queueSize int) Dispatcher {
 	return &dispatcher{
 		ID:      id,
 		workers: workers,

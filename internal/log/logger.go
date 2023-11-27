@@ -12,7 +12,8 @@ const DefaultLevel = logrus.DebugLevel
 
 // init runs when this library is first loaded.
 // This function sets the defaults that we want to use.
-// nolint: gochecknoinits // pragmatic usage of init function, not doing much harm here
+//
+//nolint:gochecknoinits
 func init() {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors: true,

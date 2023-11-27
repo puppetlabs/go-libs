@@ -38,14 +38,14 @@ type StructMissingDefaultTags struct {
 
 // StructEmptyDefaultTag holds one field with no default tag
 type StructEmptyDefaultTag struct {
-	TestVal string `env:"TEST_VAL" default:""`
+	TestVal string `default:"" env:"TEST_VAL"`
 }
 
 // StructAllTagged holds multiple fields with tags.
 type StructAllTagged struct {
-	TestVal  string `env:"TEST_VAL" default:"xyz"`
-	TestVal2 string `env:"TEST_VAL2" default:"abc"`
-	TestInt  int    `env:"TEST_INT" default:"2"`
+	TestVal  string `default:"xyz" env:"TEST_VAL"`
+	TestVal2 string `default:"abc" env:"TEST_VAL2"`
+	TestInt  int    `default:"2"   env:"TEST_INT"`
 }
 
 // InnerStructError is the nested struct
@@ -55,41 +55,41 @@ type InnerStructError struct {
 
 // OuterStructInnerError is the nested struct
 type OuterStructInnerError struct {
-	TestNestOuter string `env:"TEST_NEST_OUTER" default:"outer"`
+	TestNestOuter string `default:"outer" env:"TEST_NEST_OUTER"`
 	InnerStructError
 }
 
 // InnerStruct is the nested struct
 type InnerStruct struct {
-	TestNestInner string `env:"TEST_NEST_INNER" default:"inner"`
+	TestNestInner string `default:"inner" env:"TEST_NEST_INNER"`
 	InnerMostStruct
 }
 
 // InnerMostStruct is the nested struct
 type InnerMostStruct struct {
-	TestNestInnerMost string `env:"TEST_NEST_INNER_MOST" default:"innermost"`
+	TestNestInnerMost string `default:"innermost" env:"TEST_NEST_INNER_MOST"`
 }
 
 // OuterStruct is the struct containing the nested struct
 type OuterStruct struct {
-	TestNestOuter string `env:"TEST_NEST_OUTER" default:"outer"`
+	TestNestOuter string `default:"outer" env:"TEST_NEST_OUTER"`
 	InnerStruct
 }
 
 // Database contains the postgres config.
 type Database struct {
-	DBName   string `env:"UT_DB_NAME" default:"nottest"`
-	Host     string `env:"UT_DB_HOST" default:"xyz"`
-	Password string `env:"UT_DB_PASSWORD" default:"12345"`
-	Port     uint   `env:"UT_DB_PORT" default:"5"`
-	SSLMode  string `env:"UT_DB_SSL_MODE" default:"disabled"`
-	User     string `env:"UT_DB_USER" default:"abc"`
+	DBName   string `default:"nottest"  env:"UT_DB_NAME"`
+	Host     string `default:"xyz"      env:"UT_DB_HOST"`
+	Password string `default:"12345"    env:"UT_DB_PASSWORD"`
+	Port     uint   `default:"5"        env:"UT_DB_PORT"`
+	SSLMode  string `default:"disabled" env:"UT_DB_SSL_MODE"`
+	User     string `default:"abc"      env:"UT_DB_USER"`
 }
 
 // WebServer contains webserver configuration.
 type WebServer struct {
-	APIReadTimeout  time.Duration `env:"UT_WS_API_READ_TIMEOUT" default:"60s"`
-	APIWriteTimeout time.Duration `env:"UT_WS_API_WRITE_TIMEOUT" default:"60s"`
+	APIReadTimeout  time.Duration `default:"60s" env:"UT_WS_API_READ_TIMEOUT"`
+	APIWriteTimeout time.Duration `default:"60s" env:"UT_WS_API_WRITE_TIMEOUT"`
 }
 
 // AppConfig The configuration.
