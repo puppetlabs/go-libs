@@ -30,6 +30,13 @@ linters:
     - varcheck
 
 linters-settings:
+  ireturn:
+    allow:
+      - anon
+      - empty
+      - error
+      - generic
+      - stdlib
   lll:
     tab-width: 4
   tagliatelle:
