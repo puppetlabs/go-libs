@@ -28,6 +28,7 @@ func main() {
 	commonName := flag.String("cn", "localhost", "common name for certificate")
 	directory := flag.String("directory", wd, "output to generate certs to")
 	generateCAFiles := flag.Bool("cafiles", false, "whether to output generated CA certs or not")
+	generateCRLFile := flag.Bool("crlfile", false, "whether to output a CRL or not")
 	caCert := flag.String("cacertfile", "", "The location of the CA certificate file.")
 	caKey := flag.String("cakeyfile", "", "The location of the CA key file.")
 
@@ -94,5 +95,20 @@ func main() {
 	if err != nil {
 		fmt.Printf("Failed to write TLS key file to disk: %s.", err)
 		os.Exit(errorExitCode)
+	}
+
+	if generateCRLFile != nil && *generateCRLFile {
+		crl, err := certificate.GenerateCRL(CAKeyPair)
+		if err != nil {
+			fmt.Printf("Failed to generate CRL file: %s.", err)
+			os.Exit(errorExitCode)
+		}
+
+		err = os.WriteFile(filepath.Join(filepath.Clean(*directory), "tls.crl"), crl,
+			fileModeUserReadWriteOnly)
+		if err != nil {
+			fmt.Printf("Failed to write CRL file to disk: %s.", err)
+			os.Exit(errorExitCode)
+		}
 	}
 }

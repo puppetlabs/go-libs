@@ -48,8 +48,15 @@ else
     read generateca
     validate_choice $generateca
     if [ "$generateca" == "y" ];then
-        CA_ARGS="-cafiles true"
+        CA_ARGS="-cafiles"
     fi
+fi
+
+echo "Do you want to generate a CRL?(y|n)"
+read generatecrl
+validate_choice $generatecrl
+if [ "$generatecrl" == "y" ];then
+  CRL_ARGS="-crlfile"
 fi
 
 echo "Enter the comman name(cn) you want to generate the certificate for(localhost):"
@@ -84,5 +91,5 @@ else
     done
 fi
 
-ARGS="$DIR_ARGS $CA_ARGS $CN_ARGS $HOST_ARGS"
+ARGS="$DIR_ARGS $CA_ARGS $CN_ARGS $CRL_ARGS $HOST_ARGS"
 go run cmd/cert-generator/main.go $ARGS

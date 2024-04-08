@@ -20,6 +20,34 @@ func TestGenerateCAWorks(t *testing.T) {
 	}
 }
 
+func TestGenerateCRLWorks(t *testing.T) {
+	keyPair, err := GenerateCA()
+	if err != nil {
+		t.Errorf("Unable to generate cert due to %s", err)
+	}
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM([]byte(keyPair.Certificate))
+	if !ok {
+		t.Error("failed to parse root certificate")
+	}
+
+	crlPem, err := GenerateCRL(keyPair)
+	if err != nil {
+		t.Errorf("failed to generate CRL due to error %s", err)
+	}
+
+	crl, _ := pem.Decode(crlPem)
+	if crl == nil {
+		t.Error("failed to parse CRL due to nil response from pem decode")
+	}
+
+	_, err = x509.ParseRevocationList(crl.Bytes)
+	if err != nil {
+		t.Errorf("failed to parse CRL due to error %s", err)
+	}
+}
+
 func TestGenerateCertLocalhostWorks(t *testing.T) {
 	rootKeyPair, err := GenerateCA()
 	if err != nil {

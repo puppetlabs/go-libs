@@ -23,6 +23,9 @@ const (
 	numberOfHoursInYear = 8760
 )
 
+// ErrFailedToDecodeKey indicates that the private key could not be decoded.
+var ErrFailedToDecodeKey = fmt.Errorf("unable to decode private key")
+
 // KeyPair stores a PEM encoded certificate and
 // a PEM encoded RSA private key.
 type KeyPair struct {
@@ -75,7 +78,7 @@ func GenerateCA() (*KeyPair, error) {
 		IsCA:                  true,
 		SubjectKeyId:          subjectKeyID[:],
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		BasicConstraintsValid: true,
 	}
 
@@ -161,6 +164,42 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	}
 
 	return &keyPair, nil
+}
+
+// GenerateCRL will generate a blank Certificate revocation List from the provided issuer certificate.
+func GenerateCRL(ca *KeyPair) ([]byte, error) {
+	tlsKeyPair, err := tls.X509KeyPair(ca.Certificate, ca.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("can't convert to X509KeyPair because: %w", err)
+	}
+
+	issuerCert, err := x509.ParseCertificate(tlsKeyPair.Certificate[0])
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	privateKey, _ := pem.Decode(ca.PrivateKey)
+	if privateKey == nil {
+		return nil, ErrFailedToDecodeKey
+	}
+
+	crlKey, err := x509.ParsePKCS1PrivateKey(privateKey.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	crlTemplate := &x509.RevocationList{
+		Number:     generateSerialNumber(),
+		ThisUpdate: time.Now(),
+		NextUpdate: time.Now().Add(time.Hour * 24 * 365 * 10), // Set to be a large time in the future.
+	}
+
+	crlList, err := x509.CreateRevocationList(rand.Reader, crlTemplate, issuerCert, crlKey)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: crlList}), nil
 }
 
 func generateSerialNumber() *big.Int {
