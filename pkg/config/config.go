@@ -20,6 +20,7 @@ var (
 	errInvalidConfigType             = errors.New("config type must be either a pointer to a struct or a struct")
 	errMissingFileExtension          = errors.New("missing file extension")
 	errViperConfigNonPointerArgument = errors.New("reading Viper config requires a pointer argument")
+	errMandatoryFieldMissing         = errors.New("mandatory field required but not set in environment variable")
 )
 
 func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
@@ -54,13 +55,22 @@ func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 			continue
 		}
 
+		envTag, ok := f.Tag.Lookup("env")
 		// The env tag is mandatory. It not present or we fail to set it up then error.
-		if envTag, ok := f.Tag.Lookup("env"); ok {
+		if ok {
 			if err := v.BindEnv(f.Name, envTag); err != nil {
 				return fmt.Errorf("unable to bind %s to environment variable %s: %w", f.Name, envTag, err)
 			}
 		} else {
 			return fmt.Errorf("%w: %s", errEmptyEnvTagForField, f.Name)
+		}
+
+		if mandatoryTag, ok := f.Tag.Lookup("mandatory"); ok {
+			if mandatoryTag == "true" {
+				if os.Getenv(envTag) == "" {
+					return fmt.Errorf("%w: %s", errMandatoryFieldMissing, envTag)
+				}
+			}
 		}
 
 		var fileDefaultSet bool

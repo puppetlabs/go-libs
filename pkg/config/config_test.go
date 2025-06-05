@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var yamlExample = []byte(`db:
@@ -96,6 +98,11 @@ type WebServer struct {
 type AppConfig struct {
 	Database
 	WebServer
+}
+
+// MandatorySet has config with a value that is mandatory
+type MandatorySet struct {
+	TestVal string `env:"MANDATORY_TEST_VAL" mandatory:"true"`
 }
 
 func TestNoTagsErrors(t *testing.T) {
@@ -241,4 +248,21 @@ func TestLoadViperConfigFromFileNoFileExtension(t *testing.T) {
 	if err == nil {
 		t.Error("File with no extension should error")
 	}
+}
+
+func TestMandatorySet(t *testing.T) {
+	os.Clearenv()
+
+	err := os.Setenv("MANDATORY_TEST_VAL", "blah")
+	if err != nil {
+		t.Errorf("Unexpected error occurred %s.", err)
+	}
+
+	var actual MandatorySet
+	err = LoadViperConfig(&actual)
+	assert.NoError(t, err)
+
+	os.Clearenv()
+	err = LoadViperConfig(&actual)
+	assert.Error(t, err)
 }
