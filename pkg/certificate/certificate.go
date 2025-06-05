@@ -14,8 +14,6 @@ import (
 	"math/big"
 	"net"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -230,8 +228,6 @@ func populateDNSNamesAndIPs(hostnames HostNames, dnsNames []string, ips []net.IP
 			for _, ip := range ipList {
 				ips = append(ips, net.ParseIP(ip))
 			}
-		} else {
-			logrus.Errorf("Could not resolve hostname %s\n", hostname)
 		}
 		dnsNames = append(dnsNames, hostname)
 	}

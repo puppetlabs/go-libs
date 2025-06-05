@@ -5,12 +5,14 @@
  The objective of the config package is to allow a client to tag a struct with (optional)default values and environment variables and then the config package will use viper to populate a struct.     
     
 ## Tag descriptions
- |  Tag|Mandatory  |Description|    
-|--|--|--|    
-| env |Y  |The environment variable the field value will be retrieved from if the environment variable is present. N.B. It takes priority over any other tag.|    
-| file |N  |The path to the file to take the default value from. This can be useful for things like passwords where they can be taken from docker / k8s secrets. N.B. If this tag is present and the file can be successfully processed then the default is redundant - if the value can not be read from the file and the default is present then the default is used.|  
-| default |N  |The default value which will be used if no environment variable is present. N.B. If this is not populated then the default for the type will be used i.e. 0 for int, "" for string, false for bool etc etc.|    
-    
+ | Tag       |Mandatory  | Description                                                                                                                                                                                                                                                                                                                                                 |    
+|-----------|--|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|    
+| env       |Y  | The environment variable the field value will be retrieved from if the environment variable is present. N.B. It takes priority over any other tag.                                                                                                                                                                                                          |    
+| file      |N  | The path to the file to take the default value from. This can be useful for things like passwords where they can be taken from docker / k8s secrets. N.B. If this tag is present and the file can be successfully processed then the default is redundant - if the value can not be read from the file and the default is present then the default is used. |  
+| default   |N  | The default value which will be used if no environment variable is present. N.B. If this is not populated then the default for the type will be used i.e. 0 for int, "" for string, false for bool etc etc.                                                                                                                                                 |
+ | mandatory |N  | Whether the field is mandatory or not. N.B. If this is not populated then it will default to false so the field will be optional.                                                                                                                                                                                                                           |    
+
+
 N.B. A nested struct does not need tags associated with it. Tags are only required for non struct entries.    
 N.N.B. Nested structs will use the "squash" property by default. That means no mapstructure tag is required.    
     
