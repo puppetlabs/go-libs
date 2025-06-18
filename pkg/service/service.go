@@ -64,7 +64,7 @@ type ServerCertificateConfig struct {
 // RateLimitConfig specifies the rate limiting config.
 type RateLimitConfig struct {
 	Groups []string // Optional - which group(s) should the rate limiting run on. Empty means the default route.
-	Limit  int      // The number of requests allowed within the timeframe.
+	Limit  uint64   // The number of requests allowed within the timeframe.
 	Within int      // The timeframe(seconds) the requests are allowed in.
 }
 
@@ -77,8 +77,8 @@ type CorsConfig struct {
 
 // HandlerRateLimitConfig holds the rate limiting config fo a sepecific handler.
 type HandlerRateLimitConfig struct {
-	Limit  int // The number of requests allowed within the timeframe.
-	Within int // The timeframe(seconds) the requests are allowed in.
+	Limit  uint64 // The number of requests allowed within the timeframe.
+	Within int    // The timeframe(seconds) the requests are allowed in.
 }
 
 // Service will be the actual structure returned.
@@ -105,9 +105,9 @@ func readinessHandler() gin.HandlerFunc {
 }
 
 // Optional rate limiting handler.
-func rateLimitHandler(limit int, within int) gin.HandlerFunc {
+func rateLimitHandler(limit uint64, within int) gin.HandlerFunc {
 	return throttle.Policy(&throttle.Quota{
-		Limit:  uint64(limit),
+		Limit:  limit,
 		Within: time.Duration(within) * time.Second,
 	})
 }

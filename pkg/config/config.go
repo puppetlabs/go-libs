@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/imdario/mergo"
-	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -38,7 +38,7 @@ func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 		return errInvalidConfigType
 	}
 
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 		if f.Type.Kind() == reflect.Struct {
 			var val interface{}
@@ -97,6 +97,28 @@ func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 	return nil
 }
 
+func customUnmarshal(cfg interface{}, v *viper.Viper) error {
+	decoderConfig := &mapstructure.DecoderConfig{
+		Result:           cfg,
+		Squash:           true,
+		WeaklyTypedInput: true,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+		),
+	}
+
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return fmt.Errorf("unable to create decoder: %w", err)
+	}
+
+	if err := decoder.Decode(v.AllSettings()); err != nil {
+		return fmt.Errorf("unable to decode config: %w", err)
+	}
+
+	return nil
+}
+
 // LoadViperConfig populates the cfg structure passed in (it must be the address passed in).
 func LoadViperConfig(cfg interface{}) error {
 	if reflect.TypeOf(cfg).Kind() != reflect.Ptr {
@@ -108,10 +130,7 @@ func LoadViperConfig(cfg interface{}) error {
 		return err
 	}
 
-	err = v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
-		config.Squash = true
-	})
-	if err != nil {
+	if err := customUnmarshal(cfg, v); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
@@ -192,10 +211,7 @@ func LoadViperConfigFromReader(in io.Reader, cfg interface{}, cfgType string) er
 		return err
 	}
 
-	err = v.Unmarshal(cfg, func(config *mapstructure.DecoderConfig) {
-		config.Squash = true
-	})
-	if err != nil {
+	if err := customUnmarshal(cfg, v); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
