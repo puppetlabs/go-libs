@@ -11,23 +11,10 @@ linters:
     - gochecknoglobals  # better judged on a case-by-case basis
     - gocognit          # better judged on a case-by-case basis
     - goconst           # better judged on a case-by-case basis
-    - gomnd             # better judged on a case-by-case basis
     - nestif            # better judged on a case-by-case basis
     - nonamedreturns    # named returns are required to handle errors from deferred functions
     - varnamelen        # better judged on a case-by-case basis
     - wsl               # too aggressive
-
-    # linters disabled because they are deprecated:
-    - deadcode
-    - exhaustivestruct
-    - golint
-    - ifshort
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
-    - varcheck
 
 linters-settings:
   ireturn:

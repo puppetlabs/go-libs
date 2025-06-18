@@ -19,10 +19,11 @@ import (
 const (
 	numberOfBitsForKey  = 2048
 	numberOfHoursInYear = 8760
+	futureTime          = time.Hour * 24 * 365 * 10
 )
 
 // ErrFailedToDecodeKey indicates that the private key could not be decoded.
-var ErrFailedToDecodeKey = fmt.Errorf("unable to decode private key")
+var ErrFailedToDecodeKey = errors.New("unable to decode private key")
 
 // KeyPair stores a PEM encoded certificate and
 // a PEM encoded RSA private key.
@@ -189,7 +190,7 @@ func GenerateCRL(ca *KeyPair) ([]byte, error) {
 	crlTemplate := &x509.RevocationList{
 		Number:     generateSerialNumber(),
 		ThisUpdate: time.Now(),
-		NextUpdate: time.Now().Add(time.Hour * 24 * 365 * 10), // Set to be a large time in the future.
+		NextUpdate: time.Now().Add(futureTime), // Set to be a large time in the future.
 	}
 
 	crlList, err := x509.CreateRevocationList(rand.Reader, crlTemplate, issuerCert, crlKey)

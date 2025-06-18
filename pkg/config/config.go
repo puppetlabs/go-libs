@@ -4,12 +4,12 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/go-viper/mapstructure/v2"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -38,7 +38,7 @@ func setUpViperConfig(cfg interface{}, v *viper.Viper) error {
 		return errInvalidConfigType
 	}
 
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 		if f.Type.Kind() == reflect.Struct {
 			var val interface{}
@@ -109,10 +109,14 @@ func customUnmarshal(cfg interface{}, v *viper.Viper) error {
 
 	decoder, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to create decoder: %w", err)
 	}
 
-	return decoder.Decode(v.AllSettings())
+	if err := decoder.Decode(v.AllSettings()); err != nil {
+		return fmt.Errorf("unable to decode config: %w", err)
+	}
+
+	return nil
 }
 
 // LoadViperConfig populates the cfg structure passed in (it must be the address passed in).
