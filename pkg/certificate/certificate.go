@@ -165,6 +165,33 @@ func GenerateSignedCert(ca *KeyPair, hostnames HostNames, commonName string) (*K
 	return &keyPair, nil
 }
 
+// GenerateSignedCertFromFiles generates a new signed certificate signed by the input CA key/cert pair.
+func GenerateSignedCertFromFiles(caCertFile string, caKeyFile string,
+	hostnames HostNames, commonName string,
+) (*KeyPair, error) {
+	cert, err := tls.LoadX509KeyPair(caCertFile, caKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("can't load certificate from `%s` because: %w", caCertFile, err)
+	}
+
+	// Get the certificate bytes (DER)
+	certBytes := cert.Certificate[0]
+
+	// Get the private key bytes (for RSA)
+	rsaKey, ok := cert.PrivateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("can't load private from `%s` because: %w", caKeyFile, err)
+	}
+	keyBytes := x509.MarshalPKCS1PrivateKey(rsaKey)
+
+	caKeyPair := &KeyPair{
+		Certificate: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certBytes}),
+		PrivateKey:  pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes}),
+	}
+
+	return GenerateSignedCert(caKeyPair, hostnames, commonName)
+}
+
 // GenerateCRL will generate a blank Certificate revocation List from the provided issuer certificate.
 func GenerateCRL(ca *KeyPair) ([]byte, error) {
 	tlsKeyPair, err := tls.X509KeyPair(ca.Certificate, ca.PrivateKey)

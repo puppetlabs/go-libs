@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -59,6 +60,7 @@ type MiddlewareHandler struct {
 type ServerCertificateConfig struct {
 	CertificateFile string // The TLS certificate file.
 	KeyFile         string // The TLS private key file.
+	Certificate     *tls.Certificate
 }
 
 // RateLimitConfig specifies the rate limiting config.
@@ -307,6 +309,16 @@ func (s *Service) Run() error {
 
 	go func() {
 		if s.config.CertConfig != nil {
+			var tlsConfig *tls.Config
+			if s.config.CertConfig.Certificate != nil {
+				tlsConfig = &tls.Config{
+					MinVersion:   tls.VersionTLS12,
+					Certificates: []tls.Certificate{*s.config.CertConfig.Certificate},
+				}
+			}
+
+			s.Server.TLSConfig = tlsConfig
+
 			err := s.Server.ListenAndServeTLS(s.config.CertConfig.CertificateFile, s.config.CertConfig.KeyFile)
 			if !errors.Is(err, http.ErrServerClosed) {
 				logrus.Fatalf("Failed to start query service: %s\n", err)
