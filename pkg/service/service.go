@@ -39,6 +39,7 @@ type Config struct {
 	MiddlewareHandlers []MiddlewareHandler      // Optional middleware handlers which will be run on every request.
 	Metrics            bool                     // Optional. If true add a prometheus endpoint.
 	ErrorHandler       *MiddlewareHandler       // Optional. If true a handler will be added to the end of the chain.
+	LogIgnorePaths     []string                 // Optional. If set, these paths will not be logged by the gin logger.
 }
 
 // Handler will hold all the callback handlers to be registered. N.B. gin will be used.
@@ -249,7 +250,7 @@ func NewService(cfg *Config) (*Service, error) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	logger := log.CreateLogger(cfg.LogLevel)
-	router.Use(ginlogrus.Logger(logger))
+	router.Use(ginlogrus.Logger(logger, cfg.LogIgnorePaths...))
 
 	// Set CORS to the default if it's enabled and no override passed in.
 	setupCors(router, cfg.Cors)
