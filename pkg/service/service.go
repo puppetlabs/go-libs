@@ -13,6 +13,7 @@ import (
 
 	"github.com/cnjack/throttle"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/puppetlabs/go-libs/internal/log"
@@ -40,6 +41,7 @@ type Config struct {
 	Metrics            bool                     // Optional. If true add a prometheus endpoint.
 	ErrorHandler       *MiddlewareHandler       // Optional. If true a handler will be added to the end of the chain.
 	LogIgnorePaths     []string                 // Optional. If set, these paths will not be logged by the gin logger.
+	EnabledProfiler    bool                     // Optional. If true, pprof will be registered.
 }
 
 // Handler will hold all the callback handlers to be registered. N.B. gin will be used.
@@ -267,6 +269,10 @@ func NewService(cfg *Config) (*Service, error) {
 
 	if cfg.ErrorHandler != nil {
 		setupErrorHandler(*cfg.ErrorHandler, router)
+	}
+
+	if cfg.EnabledProfiler {
+		pprof.Register(router)
 	}
 
 	setupRateLimiting(cfg.RateLimit, router)
