@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/cnjack/throttle v0.0.0-20160727064406-525175b56e18
-	github.com/gin-contrib/cors v1.7.5
+	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-viper/mapstructure/v2 v2.2.1
