@@ -31,6 +31,7 @@ const (
 // Config will hold the configuration of the service.
 type Config struct {
 	ListenAddress      string                   // Address in the format [host/ip]:port. Mandatory.
+	DisableLog         bool                     // Turn off service logging. Default is false.
 	LogLevel           string                   // INFO,FATAL,ERROR,WARN, DEBUG, TRACE.
 	Cors               *CorsConfig              // Optional cors config.
 	ReadinessCheck     bool                     // Set to true to add a readiness handler at /readiness.
@@ -251,8 +252,11 @@ func NewService(cfg *Config) (*Service, error) {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	logger := log.CreateLogger(cfg.LogLevel)
-	router.Use(ginlogrus.Logger(logger, cfg.LogIgnorePaths...))
+
+	if !cfg.DisableLog {
+		logger := log.CreateLogger(cfg.LogLevel)
+		router.Use(ginlogrus.Logger(logger, cfg.LogIgnorePaths...))
+	}
 
 	// Set CORS to the default if it's enabled and no override passed in.
 	setupCors(router, cfg.Cors)
