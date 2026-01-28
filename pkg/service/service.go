@@ -65,6 +65,7 @@ type ServerCertificateConfig struct {
 	CertificateFile string // The TLS certificate file.
 	KeyFile         string // The TLS private key file.
 	Certificate     *tls.Certificate
+	ClientAuth      tls.ClientAuthType // Optional. Client certificate authentication policy.
 }
 
 // RateLimitConfig specifies the rate limiting config.
@@ -320,12 +321,12 @@ func (s *Service) Run() error {
 
 	go func() {
 		if s.config.CertConfig != nil {
-			var tlsConfig *tls.Config
+			tlsConfig := &tls.Config{
+				MinVersion: tls.VersionTLS12,
+				ClientAuth: s.config.CertConfig.ClientAuth,
+			}
 			if s.config.CertConfig.Certificate != nil {
-				tlsConfig = &tls.Config{
-					MinVersion:   tls.VersionTLS12,
-					Certificates: []tls.Certificate{*s.config.CertConfig.Certificate},
-				}
+				tlsConfig.Certificates = []tls.Certificate{*s.config.CertConfig.Certificate}
 			}
 
 			s.Server.TLSConfig = tlsConfig
