@@ -100,8 +100,6 @@ var (
 	errRecoveredFromPanic             = errors.New("recovered from panic")
 )
 
-var routerMap = make(map[string]*gin.RouterGroup)
-
 // Defining the readiness handler for potential use by k8s.
 func readinessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -127,7 +125,7 @@ func setCorsOnRoute(group *gin.RouterGroup, overrideConfig *cors.Config) {
 	}
 }
 
-func setupCors(engine *gin.Engine, config *CorsConfig) {
+func setupCors(engine *gin.Engine, config *CorsConfig, routerMap map[string]*gin.RouterGroup) {
 	if config != nil {
 		if config.Enabled {
 			var corsGroup *gin.RouterGroup
@@ -136,7 +134,7 @@ func setupCors(engine *gin.Engine, config *CorsConfig) {
 				setCorsOnRoute(corsGroup, config.OverrideCfg)
 			} else {
 				for _, rlGroupLabel := range config.Groups {
-					corsGroup = getRouterGroup(engine, rlGroupLabel)
+					corsGroup = getRouterGroup(engine, rlGroupLabel, routerMap)
 					setCorsOnRoute(corsGroup, config.OverrideCfg)
 				}
 			}
@@ -144,7 +142,7 @@ func setupCors(engine *gin.Engine, config *CorsConfig) {
 	}
 }
 
-func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
+func getRouterGroup(engine *gin.Engine, handlerGroup string, routerMap map[string]*gin.RouterGroup) *gin.RouterGroup {
 	if handlerGroup == "" {
 		return &engine.RouterGroup
 	}
@@ -159,13 +157,13 @@ func getRouterGroup(engine *gin.Engine, handlerGroup string) *gin.RouterGroup {
 	return newGroup
 }
 
-func setupRateLimiting(config *RateLimitConfig, engine *gin.Engine) {
+func setupRateLimiting(config *RateLimitConfig, engine *gin.Engine, routerMap map[string]*gin.RouterGroup) {
 	if config != nil {
 		if len(config.Groups) == 0 {
 			engine.RouterGroup.Use(rateLimitHandler(config.Limit, config.Within))
 		} else {
 			for _, rlGroupLabel := range config.Groups {
-				rlGroup := getRouterGroup(engine, rlGroupLabel)
+				rlGroup := getRouterGroup(engine, rlGroupLabel, routerMap)
 				rlGroup.Use(rateLimitHandler(config.Limit, config.Within))
 			}
 		}
@@ -176,21 +174,21 @@ func getRateLimitHandler(config *HandlerRateLimitConfig) gin.HandlerFunc {
 	return rateLimitHandler(config.Limit, config.Within)
 }
 
-func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine) {
+func setupMiddleware(mwHandlers []MiddlewareHandler, engine *gin.Engine, routerMap map[string]*gin.RouterGroup) {
 	// Add middleware first then the handlers
 	for _, handler := range mwHandlers {
 		if len(handler.Groups) == 0 {
 			engine.RouterGroup.Use(handler.Handler)
 		} else {
 			for _, handlerGroupLabel := range handler.Groups {
-				handlerGroup := getRouterGroup(engine, handlerGroupLabel)
+				handlerGroup := getRouterGroup(engine, handlerGroupLabel, routerMap)
 				handlerGroup.Use(handler.Handler)
 			}
 		}
 	}
 }
 
-func setupErrorHandler(errorHandler MiddlewareHandler, engine *gin.Engine) {
+func setupErrorHandler(errorHandler MiddlewareHandler, engine *gin.Engine, routerMap map[string]*gin.RouterGroup) {
 	fn := func(c *gin.Context) {
 		c.Next()
 
@@ -201,13 +199,13 @@ func setupErrorHandler(errorHandler MiddlewareHandler, engine *gin.Engine) {
 		engine.RouterGroup.Use(fn)
 	} else {
 		for _, handlerGroupLabel := range errorHandler.Groups {
-			handlerGroup := getRouterGroup(engine, handlerGroupLabel)
+			handlerGroup := getRouterGroup(engine, handlerGroupLabel, routerMap)
 			handlerGroup.Use(fn)
 		}
 	}
 }
 
-func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
+func setupEndpoints(handlers []Handler, engine *gin.Engine, routerMap map[string]*gin.RouterGroup) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%w, error caught: %v", errRecoveredFromPanic, r)
@@ -215,7 +213,7 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 	}()
 
 	for _, handler := range handlers {
-		handlerGroup := getRouterGroup(engine, handler.Group)
+		handlerGroup := getRouterGroup(engine, handler.Group, routerMap)
 
 		// Create a new group on the fly with the rate limiter as the first entry point and copy the chain of handlers.
 		if handler.RateLimitConfig != nil {
@@ -243,6 +241,8 @@ func setupEndpoints(handlers []Handler, engine *gin.Engine) (err error) {
 // NewService will setup a new service based on the config and return this service.
 func NewService(cfg *Config) (*Service, error) {
 	// Router map only required in the context of this function
+	routerMap := make(map[string]*gin.RouterGroup)
+
 	if len(cfg.Handlers) == 0 {
 		return nil, errNoHandlersRegisteredForService
 	}
@@ -260,7 +260,7 @@ func NewService(cfg *Config) (*Service, error) {
 	}
 
 	// Set CORS to the default if it's enabled and no override passed in.
-	setupCors(router, cfg.Cors)
+	setupCors(router, cfg.Cors, routerMap)
 
 	if cfg.ReadinessCheck {
 		// The readiness handler shouldn't need any middleware to run on it.
@@ -273,17 +273,17 @@ func NewService(cfg *Config) (*Service, error) {
 	}
 
 	if cfg.ErrorHandler != nil {
-		setupErrorHandler(*cfg.ErrorHandler, router)
+		setupErrorHandler(*cfg.ErrorHandler, router, routerMap)
 	}
 
 	if cfg.EnabledProfiler {
 		pprof.Register(router)
 	}
 
-	setupRateLimiting(cfg.RateLimit, router)
-	setupMiddleware(cfg.MiddlewareHandlers, router)
+	setupRateLimiting(cfg.RateLimit, router, routerMap)
+	setupMiddleware(cfg.MiddlewareHandlers, router, routerMap)
 
-	err := setupEndpoints(cfg.Handlers, router)
+	err := setupEndpoints(cfg.Handlers, router, routerMap)
 	if err != nil {
 		return nil, err
 	}
