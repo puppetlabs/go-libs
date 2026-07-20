@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/cnjack/throttle"
@@ -300,7 +301,7 @@ func NewService(cfg *Config) (*Service, error) {
 
 func (s *Service) waitForShutdown() error {
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
 	timeoutSeconds := 5
